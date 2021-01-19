@@ -4,12 +4,14 @@
 #include<string>
 #include<vector>
 #include<math.h>
+
 using namespace std;
 
 typedef unsigned int uint32_t;
 typedef unsigned short int uint16_t;
 typedef unsigned char uint8_t;
 typedef int int32_t;
+
 
 #pragma pack(push, 1)
 
@@ -35,13 +37,23 @@ typedef struct BITMAPIMAGE
 
 #pragma pack(pop)
 
+class image
+{
+	public:
+	BITMAP A;
+
+	image(){
+		
+		cout<<"Const";
+	}
+
 BITMAP readbmp(char* s,uint8_t* imarray)
 {
 	int i;
 	cout << s << endl;
 	FILE* f = fopen(s, "rb");
 	FILE* ifile = fopen(s, "rb");
-	BITMAP A;
+	
 	if(f==NULL)
 	{
 		cout << "Error in Opening File" << endl;
@@ -50,11 +62,12 @@ BITMAP readbmp(char* s,uint8_t* imarray)
 	unsigned char fileheader[54];
     fread(fileheader, sizeof(unsigned char), 54, f);
     string filestruct = "";
+	
   	for(uint8_t i=0;i<sizeof(fileheader);i++)
   	{
   		if(i<2)
   			filestruct += fileheader[i];
-  		else break;
+  		else	break;
   	}
   	if(filestruct != "BM")
   	{
@@ -121,6 +134,7 @@ BITMAP readbmp(char* s,uint8_t* imarray)
 		fseek(ifile, offset + (i * padded_row_size), SEEK_SET);
 		fread(currentpointer, sizeof(unsigned char), unpadded_row_size, ifile);
 		currentpointer -= unpadded_row_size;
+		
 	}
 	cout << sizeof(imarray) << endl;
 	fclose(ifile);
@@ -131,6 +145,34 @@ BITMAP readbmp(char* s,uint8_t* imarray)
 	return A;
 }
 
+uint8_t *read_img(char* s)
+{	
+	uint8_t *imarray;
+	FILE* f = fopen(s, "rb");
+	FILE* ifile = fopen(s, "rb");
+	int colors = A.bitwidth/8;
+	int unpadded_row_size = A.width * colors;
+	int padded_row_size = (int)(4 * ceil((float)(A.width/4.0f))*colors);
+	int totalsize = unpadded_row_size * A.height;
+	cout << "Image Array Size" << " " << totalsize << endl;
+	imarray = new uint8_t[totalsize];
+	int i = 0;
+	uint8_t* currentpointer = imarray +  (A.height - 1)*unpadded_row_size;
+	for(int i=0;i<A.height;i++)
+	{
+		fseek(ifile, A.offset + (i * padded_row_size), SEEK_SET);
+		fread(currentpointer, sizeof(unsigned char), unpadded_row_size, ifile);
+		currentpointer -= unpadded_row_size;
+		
+	}
+	cout << sizeof(imarray) << endl;
+	fclose(ifile);
+	fclose(f);
+	return imarray;
+
+}
+
+};
 
 void writebmp(const char* out, BITMAP A,const char* s, uint8_t* pixels)
 {
@@ -172,7 +214,7 @@ void writebmp(const char* out, BITMAP A,const char* s, uint8_t* pixels)
 	fwrite(&Ucolors, 4, 1, outfile);
 	fwrite(&Icolors, 4, 1, outfile);
 	int i = 0;
-	int unpadded_row_size = 256;
+	int unpadded_row_size = 256*3;
 	for(int i=0;i<height;i++)
 	{
 		int pixeloffset = ((height - i - 1) * unpadded_row_size);
@@ -181,23 +223,60 @@ void writebmp(const char* out, BITMAP A,const char* s, uint8_t* pixels)
 	fclose(outfile);
 }
 
+uint8_t *gray_scale(uint8_t *img, uint8_t *gs_img, uint16_t bit_width, uint32_t w, uint32_t h)
+{
+	if(bit_width>8)
+	{
+		gs_img = new uint8_t[w*h];
+		cout<<h<<" "<<flush;
+		for(int i=0;i<h;i++)
+		{
+			for(int j=0;j<w;j++)
+			{	//cout<<i<<" "<<j<<"\n "<<flush;
+				//cout<<(int)img[(3*i)*w+j]<<" "<<i<<"\n "<<flush;
+				gs_img[i*w+j] = (uint8_t)floor(0.59*img[(3*i+2)*w+j]+0.3*img[(3*i+1)*w+j]+0.11*img[(3*i)*w+j]);
+				//cout<<(int)gs_img[i*w+j]<<"\n "<<flush;
+			}
+			
+		}	
+	}
+	gs_img=img;
+}
+
+
 int main()
 {
-	string f = "cameraman.bmp";
+	string f = "lena_colored_256.bmp";
 	char *cstr = &f[0];
 	uint8_t *imarray;
-	BITMAP A = readbmp(cstr, imarray);
+	image obj;
+	BITMAP A = obj.readbmp(cstr, imarray);
+	imarray=obj.read_img(cstr);
 	string outfilename = "test.bmp";
 	int colors = 1;
-	// for(int i=0;i<A.height;i++)
-	// {
-	// 	for(int j=0;j<A.width;j++)
-	// 		cout << (int)imarray[i*A.width + j] << " ";
-	// 	cout << endl;
-	// }
+	int s = sizeof(imarray)/sizeof(imarray[0]);
+	cout<<"\n Size : "<<s<<"\n "<<flush;
+	for(int i=0;i<A.height;i++)
+	{
+		for(int j=0;j<A.width;j++)
+			cout << (int)imarray[3*i*A.width + j] << " ";
+		cout << endl;
+	}
+
+	uint8_t *gs_img;
+	gray_scale(imarray, gs_img, A.bitwidth, A.width, A.height);
+	
+	for(int i=0;i<A.height;i++)
+	{
+		for(int j=0;j<A.width;j++)
+			cout << (int)gs_img[i*A.width + j] << " ";
+		cout << endl;
+	}
+	
 	char *out = &outfilename[0];
 	writebmp(out,A,cstr,imarray);
 	cout << "After wrting" << endl;
 	uint8_t *pixels;
-	BITMAP B = readbmp(out,pixels);
+	//BITMAP B = readbmp(out,pixels);
+	
 }
