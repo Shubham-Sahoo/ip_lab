@@ -375,21 +375,7 @@ uint8_t* applysobeld(Mat image, int size, int type)
 
 void applyfilter(int fileid, int filterid, int kernel, bool valid)
 {	
-	if(valid==0)
-	{	
-		
-		Mat image(600, 600, CV_8UC1, Scalar(0));
-		cv::putText(image, //target image
-            "Invalid kernel size!", //text
-            cv::Point(10, 600 / 2), //top-left position
-            cv::FONT_HERSHEY_DUPLEX,
-            1.0,
-            CV_RGB(255, 255, 255), //font color
-            2);
-		namedWindow("Result");
-		imshow("Result", image);
-		return;
-	}
+	
 
 
 	vector<string> imgs;
@@ -399,7 +385,28 @@ void applyfilter(int fileid, int filterid, int kernel, bool valid)
 	vector<string> filters = {"Mean", "Gaussian", "Median", "Prewitt", "Sobel-h", "Sobel-v", "Sobel-d", "Laplacian", "LoG"};
 
 	Mat image = imread(imgs[fileid], IMREAD_GRAYSCALE);
-	imshow("Tracker", image);
+
+	if(valid==0)
+	{	
+		
+		Mat res(image.rows, image.cols, CV_8UC1, Scalar(0));
+		cv::putText(res, //target image
+            "Invalid kernel size!", //text
+            cv::Point(10, image.cols / 2), //top-left position
+            cv::FONT_HERSHEY_DUPLEX,
+            1.0,
+            CV_RGB(255, 255, 255), //font color
+            2);
+		Mat result(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
+		Mat mat_im = result(Rect(0,0,image.cols,image.rows));
+		image.copyTo(mat_im);
+		mat_im = result(Rect(image.cols,0,image.cols,image.rows));
+		res.copyTo(mat_im);
+		imshow("Tracker", result);
+		return;
+	}
+
+	//imshow("Tracker", image);
 	int n = image.rows;
 	int m = image.cols;
 	uint8_t* newimage;
@@ -437,8 +444,16 @@ void applyfilter(int fileid, int filterid, int kernel, bool valid)
 	}
 	Mat res(n, m, CV_8UC1, Scalar(0));
 	res.data = newimage;
-	namedWindow("Result");
-	imshow("Result", res);
+
+	Mat result(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
+	Mat mat_im = result(Rect(0,0,image.cols,image.rows));
+	image.copyTo(mat_im);
+	mat_im = result(Rect(image.cols,0,image.cols,image.rows));
+	res.copyTo(mat_im);
+	imshow("Tracker", result);
+
+	//namedWindow("Result");
+	//imshow("Result", res);
 }
 
 void myFunc(int value, void *ud)
@@ -482,7 +497,21 @@ int main()
 	createTrackbar("Filter-ID", "Tracker", u.filter_id, filters.size() - 1, myFunc, &u);
 	createTrackbar("Kernel_size", "Tracker", u.kernel_size, 10, myFunc, &u);
 	Mat image = imread(imgs[id], IMREAD_GRAYSCALE);
-	imshow("Tracker", image);
+	Mat res_im( image.cols,image.rows, CV_8UC1, Scalar(255));
+	cv::putText(image, //target image
+        "Move the track bars for output!", //text
+        cv::Point(10, 600 / 2), //top-left position
+        cv::FONT_HERSHEY_DUPLEX,
+        1.0,
+        CV_RGB(255, 255, 255), //font color
+        2);
+	
+	Mat res(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
+	Mat mat_im = res(Rect(0,0,image.cols,image.rows));
+	image.copyTo(mat_im);
+	mat_im = res(Rect(image.cols,0,image.cols,image.rows));
+	res_im.copyTo(mat_im);
+	imshow("Tracker", res);
 	waitKey();
 	// createTrackbar("Filter", "Tracker", &filter, filters.size() - 1, myfunc, &u);
 	// createTrackbar("Kernel Size", "Tracker", &ksize, 9, myfunc, &u);
