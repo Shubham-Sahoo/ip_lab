@@ -71,6 +71,8 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 	uint8_t* newimage = new uint8_t[n*m];
 	int s = size / 2;
 
+	int max_v = 0;
+	int min_v = 0;
 	for(int i = 0; i < n; i++)
 	{
 		for(int j = 0; j < m; j++)
@@ -87,23 +89,39 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 					sum += h[posh] * (int)pixel[posim];
 				}
 			}
-			if(type == 7){
-				if(sum >  255){
-					sum = 255;
-				}
-				else if(sum < -255){
-					sum = -255;
-				}
-				if(sum < 0)
-					sum = -sum;
+			if(sum>max_v)
+			{
+				max_v=sum;
 			}
-			else{
-				if(sum >  255)
-					sum = 255;
-				else if(sum < 0)
-					sum = 0;
+			if(sum<min_v)
+			{
+				min_v=sum;
 			}
 			newimage[i * m + j] = (uint8_t)floor(sum);
+			if(sum<0)
+			{
+				sum=0;
+			}
+			if(sum>255)
+			{
+				sum=255;
+			}
+			if(type!=7)
+				newimage[i * m + j] = (uint8_t)floor(sum);
+		}
+	}
+
+	min_v = (min_v<0)?min_v:0;
+	max_v = (max_v>255)?max_v:255;
+
+	if(type==7)
+	{
+		for(int i = 0; i < n; i++)
+		{
+			for(int j = 0; j < m; j++)
+			{
+				newimage[i * m + j] = (uint8_t)floor(double(newimage[i * m + j]*255)/(max_v-min_v));
+			}
 		}
 	}
 	return newimage;
@@ -163,23 +181,23 @@ uint8_t* applygaussian(Mat image, int size, int type)
 {
 	double* h = new double[size * size];
 	int mid = (size)/2;
-	float normal = 0;
-	int sigma = 1;
+	double normal = 0;
+	int sigma = ceil(float(size)/6);
 	for(int i=0;i<size;i++)
 	{
 		for(int j=0;j<size;j++)
 		{
-			int x = abs(i-mid);
-			int y = abs(j-mid);
-			float q = 2 * PI * pow(sigma, 2);
-			h[i*size + j] = (1/q) * exp( - (pow(x,2) + pow(y,2)) / q);
+			double x = abs(i-mid);
+			double y = abs(j-mid);
+			double q = pow(sigma, 2)*2*PI;
+			h[i*size + j] = double(1/q) * exp( - (pow(x,2) + pow(y,2)) / q);
 			normal += h[i*size + j];
 		}
 	}
 	for(int i=0;i<size;i++)
 	{
 		for(int j=0;j<size;j++)
-		{
+		{	
 			h[i*size + j] /= normal;
 		}
 	}
@@ -189,13 +207,25 @@ uint8_t* applygaussian(Mat image, int size, int type)
 uint8_t* applylaplacian(Mat image, int size, int type)
 {
 	double* h = new double[size * size];
-	int mid = (size)/2;
+	int mid = floor((size)/2);
+	double sum = 0;
 	for(int i=0;i<size;i++)
 	{
 		for(int j=0;j<size;j++)
-			h[i*size + j] = 1;
+		{	
+			
+			if(i==mid && j==mid)
+			{
+				continue;
+			}
+			
+			h[i*size + j] = -floor(floor(size/2)/sqrt(pow(i-mid,2)+pow(j-mid,2)));
+			sum += h[i*size + j];
+			
+		}
+		
 	}
-	h[mid*size + mid] = -(pow(size, 2) - 1);
+	h[mid*size + mid] = -sum;	
 
 	return convolve(image, h, size, type);
 }
@@ -466,7 +496,7 @@ void myFunc(int value, void *ud)
      	applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,0);
      	return;
      }
-     if((*u.filter_id >= 3 || *u.filter_id <= 6)&& *(u.kernel_size) != 3)
+     if((*u.filter_id >= 3 && *u.filter_id <= 6) && *(u.kernel_size) != 3)
      {
      	applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,0);
      	return;
