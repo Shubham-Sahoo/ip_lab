@@ -62,35 +62,195 @@ int ListDir(const std::string& path, vector<string>& v) {
   return 0;
 }
 
-
-
-float* getKernel(string filter, int size)
+uint8_t* convolve(Mat image, double* h, int size, int type)
 {
-	float* h = new float[size * size];
-	int mid = (size)/2;
-	if(filter == "Mean")
-	{
-		for(int i=0;i<size;i++)
-		{
-			for(int j=0;j<size;j++)
-				h[i*size + j] = float(1/float(size * size));
-		}
-	}
-	else if(filter == "Gaussian")
-	{
-		int sigma = 1;
-		for(int i=0;i<size;i++)
-		{
-			for(int j=0;j<size;j++)
-			{
-				int x = abs(i-mid);
-				int y = abs(j-mid);
-				h[i*size + j] = (1/(2 * PI * pow(sigma, 2))) * exp( - (pow(x,2) + pow(y,2))/(2 * pow(sigma,2)));
-			}
-		}
-	}
-	return h;
+	uint8_t* pixel = (uint8_t*)image.data;
+	int n = image.rows;
+	int m = image.cols;
 
+	uint8_t* newimage = new uint8_t[n*m];
+	int s = size / 2;
+
+	for(int i = 0; i < n; i++)
+	{
+		for(int j = 0; j < m; j++)
+		{
+			float sum = 0;
+			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
+				continue;
+			for(int p = -s; p <= s; p++)
+			{
+				for(int r = -s; r<=s; r++)
+				{
+					int posim = (i + p) * m + (j + r);
+					int posh =  (p + s) * size + (r + s);
+					sum += h[posh] * (int)pixel[posim];
+				}
+			}
+			if(type == 7){
+				if(sum >  255){
+					sum = 255;
+				}
+				else if(sum < -255){
+					sum = -255;
+				}
+				if(sum < 0)
+					sum = -sum;
+			}
+			else{
+				if(sum >  255)
+					sum = 255;
+				else if(sum < 0)
+					sum = 0;
+			}
+			newimage[i * m + j] = (uint8_t)floor(sum);
+		}
+	}
+	return newimage;
+}
+
+uint8_t* applymean(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+	int mid = (size)/2;
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+			h[i*size + j] = float(1/float(size * size));
+	}
+	return convolve(image, h, size, type);
+}
+
+uint8_t* applymedian(Mat image, int size, int type)
+{
+	uint8_t* pixel = (uint8_t*)image.data;
+	int n = image.rows;
+	int m = image.cols;
+
+	uint8_t* newimage = new uint8_t[n*m];
+	int s = size / 2;
+	
+	for(int i = 0; i < n; i++)
+	{
+		for(int j = 0; j < m; j++)
+		{
+			float sum = 0;
+			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
+				continue;
+			vector<int> v;
+			for(int p = -s; p <= s; p++)
+			{
+				for(int r = -s; r<=s; r++)
+				{
+					int posim = (i + p) * m + (j + r);
+					v.push_back((int)pixel[posim]);
+				}
+			}
+			sort(v.begin(), v.end());
+			float mid;
+			if(v.size() % 2)
+				mid = v[v.size()/2];
+			else
+				mid = (v[v.size()/2] + v[v.size()/2 - 1])/2.0;
+			newimage[i * m + j] = (uint8_t)floor(mid);
+		}
+	}
+	return newimage;
+}
+
+
+uint8_t* applygaussian(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+	int mid = (size)/2;
+	float normal = 0;
+	int sigma = 1;
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{
+			int x = abs(i-mid);
+			int y = abs(j-mid);
+			float q = 2 * PI * pow(sigma, 2);
+			h[i*size + j] = (1/q) * exp( - (pow(x,2) + pow(y,2)) / q);
+			normal += h[i*size + j];
+		}
+	}
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{
+			h[i*size + j] /= normal;
+		}
+	}
+	return convolve(image, h, size, type);
+}
+
+uint8_t* applylaplacian(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+	int mid = (size)/2;
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+			h[i*size + j] = 1;
+	}
+	h[mid*size + mid] = -(pow(size, 2) - 1);
+
+	return convolve(image, h, size, type);
+}
+
+
+
+uint8_t* applyLoG(Mat image, int size, int type)
+{
+	uint8_t* pixel = applygaussian(image, size, 1);
+	int n = image.rows;
+	int m = image.cols;
+	Mat res(n, m, CV_8UC1, Scalar(0));
+	res.data = pixel;
+	return applylaplacian(res, size, 7);
+
+	// double* h = new double[size * size];
+	// float sigma = 1.0;
+	// // for(int i=0;i<size;i++)
+	// // {
+	// // 	for(int j=0;j<size;j++)
+	// // 	{
+	// // 		int x = abs(i-mid);
+	// // 		int y = abs(j-mid);
+	// // 		float q = 2 * PI * pow(sigma, 2);
+	// // 		int p = pow(x, 2) + pow(y, 2);
+	// // 		h[i*size + j] = (float)(-(1/(PI * pow(sigma, 4))) * (1 - p/q) * exp(-p/q));
+	// // 		h[i*size + j] *= 426.3;
+	// // 		cout << -(1/(PI * pow(sigma, 4))) * (1 - p/q) * exp(-p/q) << " " << i << " " << j << " " << p << endl;
+	// // 	}
+	// // }
+	// int kernelSize = size;
+	// for(int i = -(kernelSize/2); i<=(kernelSize/2); i++)
+ //    {
+
+ //        for(int j = -(kernelSize/2); j<=(kernelSize/2); j++)
+ //        {
+
+ //            double L_xy = -1/(PI * pow(sigma,4))*(1 - ((pow(i,2) + pow(j,2))/(2*pow(sigma,2))))*exp(-((pow(i,2) + pow(j,2))/(2*pow(sigma,2))));
+ //            L_xy*=426.3;
+ //            h[(i + kernelSize/2)*size  + (j + kernelSize/2)] = L_xy;
+ //        }
+
+ //    }
+	// float sum = 0;
+	// for(int i=0;i<size;i++)
+	// {
+	// 	for(int j=0;j<size;j++)
+	// 	{
+	// 		sum += (float)h[i*size + j];
+	// 		cout << (float)h[i*size + j] << " ";
+	// 	}
+	// 	cout << endl;
+	// }
+	// cout << "Filter Sum" << " " << sum << endl;
+	// return convolve(image, h, size);	
 }
 
 void applyfilter(int fileid, int filterid, int kernel)
@@ -102,54 +262,34 @@ void applyfilter(int fileid, int filterid, int kernel)
 	vector<string> filters = {"Mean", "Gaussian", "Median", "Prewitt", "Sobel-h", "Sobel-v", "Sobel-d", "Laplacian", "LoG"};
 
 	Mat image = imread(imgs[fileid], IMREAD_GRAYSCALE);
-	float* h = getKernel(filters[filterid], kernel);
 	imshow("Tracker", image);
-	uint8_t* pixel = (uint8_t*)image.data;
 	int n = image.rows;
 	int m = image.cols;
-
-	// for(int i=0;i<kernel;i++)
-	// {
-	// 	for(int j=0;j<kernel;j++)
-	// 		cout << h[i*kernel + j] << " ";
-	// 	cout << endl; 
-	// }
-
-	uint8_t* newimage = new uint8_t[n*m];
-
-	int s = kernel / 2;
-
-	cout << n << " " << m << " " << s << endl;
-	
-	for(int i = 0; i < n; i++)
-	{
-		for(int j = 0; j < m; j++)
-		{
-			float sum = 0;
-			if(i - s < 0 or i + s > n or j - s < 0 or j + s > m)
-				continue;
-			// cout << i << " " << j << endl;
-			for(int p = -s; p <= s; p++)
-			{
-				for(int r = -s; r<=s; r++)
-				{
-					int posim = (i + p) * m + (j + r);
-					int posh =  (p + s) * kernel + (r + s);
-					// cout << i + p << " " << j + r << " " << p + 1 << " " << r + 1 << endl;  
-					sum += h[posh] * (int)pixel[posim];
-				}
-			}
-			newimage[i * m + j] = (uint8_t)floor(sum);
-			// cout << i << " " << j << " " << sum << endl;
-			// break;
-		}
-		// break;
+	uint8_t* newimage;
+	switch(filterid){
+		case 0:
+			newimage = applymean(image, kernel, 0);
+			break;
+		case 1:
+			newimage = applygaussian(image, kernel, 1);
+			break;
+		case 2:
+			newimage = applymedian(image, kernel, 2);
+			break;
+		case 7:
+			newimage = applylaplacian(image, kernel, 7);
+			break;
+		case 8:
+			newimage = applyLoG(image, kernel, 8);
+			break;
+		default:
+			cout << "Invalid Filter" << endl;
+			return;
 	}
 	Mat res(n, m, CV_8UC1, Scalar(0));
 	res.data = newimage;
 	namedWindow("Result");
 	imshow("Result", res);
-
 }
 
 void myFunc(int value, void *ud)
