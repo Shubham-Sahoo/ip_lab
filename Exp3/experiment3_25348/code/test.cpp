@@ -21,7 +21,7 @@ so.. we can use a struct containing all these variables.
 
 #include <iostream>
 #include <cstdio>
-
+#include <math.h>
 #include <dirent.h>
 #include <opencv2/opencv.hpp>
 #define PI 3.14
@@ -253,8 +253,87 @@ uint8_t* applyLoG(Mat image, int size, int type)
 	// return convolve(image, h, size);	
 }
 
-void applyfilter(int fileid, int filterid, int kernel)
+uint8_t* applyprewitt(Mat image, int size, int type)
 {
+	double* h = new double[size * size];
+	double* v = new double[size * size];
+
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{
+			if(j==0)
+			{
+				h[i*size+j] = 1;
+			}
+			if(i==0)
+			{
+				v[i*size+j] = 1;
+			}
+			if(j==size-1)
+			{
+				h[i*size+j] = -1;
+			}
+			if(i==size-1)
+			{
+				v[i*size+j] = -1;
+			}
+			if(i!=0 && j!=0 && i!=size-1 && j!=size-1)
+			{
+				h[i*size+j] = 0;
+				v[i*size+j] = 0;
+			}
+
+		}	
+	}
+
+
+	uint8_t *imh = convolve(image, h, size, type);
+	uint8_t *imv = convolve(image, v, size, type);
+	double *res_p = new double[image.rows * image.cols];
+	uint8_t *res = new uint8_t[image.rows * image.cols];
+
+	for(int i = 0; i < image.rows; i++)
+	{
+		for (int j = 0; j < image.cols; j++)
+		{
+			res_p[i*image.cols+j] = sqrt(pow(imh[i*image.cols+j],2)+pow(imv[i*image.cols+j],2))/sqrt(2);
+			
+		}
+	}
+
+	for(int i=0;i<image.rows;i++)
+	{
+		for (int j = 0; j < image.cols; j++)
+		{
+			res[i*image.cols+j] = uint8_t(res_p[i*image.cols+j]);
+		}
+	}
+
+	return res;
+}
+
+
+
+void applyfilter(int fileid, int filterid, int kernel, bool valid)
+{	
+	if(valid==0)
+	{	
+		
+		Mat image(600, 600, CV_8UC1, Scalar(0));
+		cv::putText(image, //target image
+            "Invalid kernel size!", //text
+            cv::Point(10, 600 / 2), //top-left position
+            cv::FONT_HERSHEY_DUPLEX,
+            1.0,
+            CV_RGB(255, 255, 255), //font color
+            2);
+		namedWindow("Result");
+		imshow("Result", image);
+		return;
+	}
+
+
 	vector<string> imgs;
 	ListDir("./Noisy Images/", imgs);
 	ListDir("./Normal Images/", imgs);
@@ -276,6 +355,18 @@ void applyfilter(int fileid, int filterid, int kernel)
 		case 2:
 			newimage = applymedian(image, kernel, 2);
 			break;
+		case 3:
+			newimage = applyprewitt(image, kernel, 3);
+			break;
+		// case 4:
+		// 	newimage = applysobelh(image, kernel, 4);
+		// 	break;
+		// case 5:
+		// 	newimage = applysobelv(image, kernel, 5);
+		// 	break;	
+		// case 6:
+		// 	newimage = applysobeld(image, kernel, 6);
+		// 	break;
 		case 7:
 			newimage = applylaplacian(image, kernel, 7);
 			break;
@@ -299,10 +390,15 @@ void myFunc(int value, void *ud)
      // cout << *(u.file_id) << " " << *(u.filter_id) << " " << *(u.kernel_size) << endl;
      if(*u.kernel_size % 2 == 0 or *(u.kernel_size) < 2)
      {
-     	cout << "Invalid Kernel size" << endl;
+     	applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,0);
      	return;
      }
-     applyfilter(*u.file_id,*u.filter_id,*u.kernel_size);
+     if(*u.filter_id == 3 && *(u.kernel_size) != 3)
+     {
+     	applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,0);
+     	return;
+     }
+     applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,1);
 }
 
 
