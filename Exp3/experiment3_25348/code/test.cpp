@@ -313,7 +313,65 @@ uint8_t* applyprewitt(Mat image, int size, int type)
 	return res;
 }
 
+uint8_t* applysobelh(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
 
+	h[0] = 1;	h[1] = 0;	h[2] = -1;
+	h[3] = 2;	h[4] = 0;	h[5] = -2;
+	h[6] = 1;	h[7] = 0;	h[8] = -1;
+
+	return convolve(image, h, size, type);
+}
+
+uint8_t* applysobelv(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+
+	h[0] = 1;	h[1] = 2;	h[2] = 1;
+	h[3] = 0;	h[4] = 0;	h[5] = 0;
+	h[6] = -1;	h[7] = -2;	h[8] = -1;
+
+	return convolve(image, h, size, type);
+}
+
+uint8_t* applysobeld(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+	double* v = new double[size * size];
+
+	h[0] = 0;	h[1] = 1;	h[2] = 2;
+	h[3] = -1;	h[4] = 0;	h[5] = 1;
+	h[6] = -2;	h[7] = -1;	h[8] = 0;
+
+	v[0] = 2;	v[1] = 1;	v[2] = 0;
+	v[3] = 1;	v[4] = 0;	v[5] = -1;
+	v[6] = 0;	v[7] = -1;	v[8] = -2;
+
+	uint8_t *imh = convolve(image, h, size, type);
+	uint8_t *imv = convolve(image, v, size, type);
+	double *res_p = new double[image.rows * image.cols];
+	uint8_t *res = new uint8_t[image.rows * image.cols];
+
+	for(int i = 0; i < image.rows; i++)
+	{
+		for (int j = 0; j < image.cols; j++)
+		{
+			res_p[i*image.cols+j] = sqrt(pow(imh[i*image.cols+j],2)+pow(imv[i*image.cols+j],2))/sqrt(2);
+			
+		}
+	}
+
+	for(int i=0;i<image.rows;i++)
+	{
+		for (int j = 0; j < image.cols; j++)
+		{
+			res[i*image.cols+j] = uint8_t(res_p[i*image.cols+j]);
+		}
+	}
+
+	return res;
+}
 
 void applyfilter(int fileid, int filterid, int kernel, bool valid)
 {	
@@ -358,15 +416,15 @@ void applyfilter(int fileid, int filterid, int kernel, bool valid)
 		case 3:
 			newimage = applyprewitt(image, kernel, 3);
 			break;
-		// case 4:
-		// 	newimage = applysobelh(image, kernel, 4);
-		// 	break;
-		// case 5:
-		// 	newimage = applysobelv(image, kernel, 5);
-		// 	break;	
-		// case 6:
-		// 	newimage = applysobeld(image, kernel, 6);
-		// 	break;
+		case 4:
+			newimage = applysobelh(image, kernel, 4);
+			break;
+		case 5:
+			newimage = applysobelv(image, kernel, 5);
+			break;	
+		case 6:
+			newimage = applysobeld(image, kernel, 6);
+			break;
 		case 7:
 			newimage = applylaplacian(image, kernel, 7);
 			break;
@@ -393,7 +451,7 @@ void myFunc(int value, void *ud)
      	applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,0);
      	return;
      }
-     if(*u.filter_id == 3 && *(u.kernel_size) != 3)
+     if((*u.filter_id >= 3 || *u.filter_id <= 6)&& *(u.kernel_size) != 3)
      {
      	applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,0);
      	return;
