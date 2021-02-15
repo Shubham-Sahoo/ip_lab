@@ -206,7 +206,7 @@ uint8_t* applygaussian(Mat image, int size, int type)
 	double* h = new double[size * size];
 	int mid = (size)/2;
 	double normal = 0;
-	int sigma = ceil(float(size)/6);
+	double sigma = (double(size)/6);
 	for(int i=0;i<size;i++)
 	{
 		for(int j=0;j<size;j++)
@@ -312,7 +312,7 @@ uint8_t* applyLoG(Mat image, int size, int type)
 	}
 
 	double* v = new double[size * size];
-	float sigma = ceil(float(size)/6);
+	double sigma = (double(size)/6);
 	// for(int i=0;i<size;i++)
 	// {
 	// 	for(int j=0;j<size;j++)
@@ -358,8 +358,8 @@ uint8_t* applyLoG(Mat image, int size, int type)
 		}
 		// cout << endl;
 	}
-	cout << "Filter Sum" << " " << sum << endl;
-	return convolve(image, h, size, type);	
+	//cout << "Filter Sum" << " " << sum << endl;
+	return convolve(image, v, size, type);	
 }
 
 uint8_t* applyprewitt(Mat image, int size, int type)
