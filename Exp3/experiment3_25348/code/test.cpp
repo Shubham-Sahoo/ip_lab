@@ -89,6 +89,9 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 					sum += h[posh] * (int)pixel[posim];
 				}
 			}
+
+/*********** Linear Scaled ***************/
+
 			// if(sum>max_v)
 			// {
 			// 	max_v=sum;
@@ -109,7 +112,9 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 			// if((type!=7))//&&(type!=8))
 			// 	newimage[i * m + j] = (uint8_t)floor(sum);
 
-			if(type != 7)
+/************ Thresholded **************/
+
+			if(type != 7 && type!=8)
 			{
 				if(sum<0)
 				{
@@ -232,6 +237,9 @@ uint8_t* applylaplacian(Mat image, int size, int type)
 {
 	double* h = new double[size * size];
 	int mid = floor((size)/2);
+
+/************** Weighted Laplacian according to distance from center **************/
+
 	// double sum = 0;
 	// for(int i=0;i<size;i++)
 	// {
@@ -249,7 +257,10 @@ uint8_t* applylaplacian(Mat image, int size, int type)
 	// 	}
 		
 	// }
-	// h[mid*size + mid] = -sum;	
+	// h[mid*size + mid] = -sum;
+
+/************** Normal Laplacian ***********************/
+
 	for(int i=0;i<size;i++)
 	{
 		for(int j=0;j<size;j++)
@@ -264,6 +275,9 @@ uint8_t* applylaplacian(Mat image, int size, int type)
 
 uint8_t* applyLoG(Mat image, int size, int type)
 {
+
+/**************** Operator cascading Output ****************/
+
 	// uint8_t* pixel = applygaussian(image, size, 1);
 	// int n = image.rows;
 	// int m = image.cols;
@@ -271,61 +285,55 @@ uint8_t* applyLoG(Mat image, int size, int type)
 	// res.data = pixel;
 	// return applylaplacian(res, size, 7);
 
-	double* h = new double[size * size];
 
-	if(size == 3)
-	{
-		h[0] = -1; h[1] = -1; h[2] = -1;
-		h[3] = -1; h[4] = 8; h[5] = -1;
-		h[6] = -1; h[7] = -1; h[8] = -1;
-	}
-	else if(size == 5)
-	{
-		h[0] = -1; h[1] = 3; h[2] = -4; h[3] = -3; h[4] =  -1;
-		h[5] = -3; h[6] = 0; h[7] = 6; h[8] = 0; h[9] =  -3;
-		h[10] = -4; h[11] = 6; h[12] = 20; h[13] = 6; h[14] =  -4;
-		h[15] = -3; h[16] = 0; h[17] = 6; h[18] = 0; h[19] =  -3;
-		h[20] = -1; h[21] = 3; h[22] = -4; h[23] = -3; h[24] =  -1;
-	}
-	else if(size == 7)
-	{
-		h[0] = -2; h[1] = -3; h[2] = -4; h[3] = -6; h[4] = -4; h[5] = -3; h[6] = -2;
-		h[7] = -3; h[8] = -5; h[9] = -4; h[10] = -3; h[11] = -4; h[12] = -5; h[13] = -3;
-		h[14] = -4; h[15] = -4; h[16] = 9; h[17] = 20; h[18] = 9; h[19] = -4; h[20] = -4;
-		h[21] = -6; h[22] = -3; h[23] = 20; h[24] = 36; h[25] = 20; h[26] = -3; h[27] = -6;
-		h[28] = -4; h[29] = -4; h[30] = 9; h[31] = 20; h[32] = 9; h[33] = -4; h[34] = -4;
-		h[35] = -3; h[36] = -5; h[37] = -4; h[38] = -3; h[39] = -4; h[40] = -5; h[41] = -3;
-		h[42] = -2; h[43] = -3; h[44] = -4; h[45] = -6; h[46] = -4; h[47] = -3; h[48] = -2;
+/**************** Hard coded Kernels for LoG *****************/
 
-	}
-	else
-	{
-		h[0] = 0; h[1] = 1; h[2] = 1; h[3] = 2; h[4] = 2; h[5] = 2; h[6] = 1; h[7] = 1; h[8] = 0;
-		h[9] = 1; h[10] = 2; h[11] = 4; h[12] = 5; h[13] = 5; h[14] = 5; h[15] = 4; h[16] = 2; h[17] = 1;
-		h[18] = 1; h[19] = 4; h[20] = 5; h[21] = 3; h[22] = 0; h[23] = 3; h[24] = 5; h[25] = 4; h[26] = 1;
-		h[27] = 2; h[28] = 5; h[29] = 3; h[30] = -12; h[31] = -24; h[32] = -12; h[33] = 3; h[34] = 5; h[35] = 2;
-		h[36] = 2; h[37] = 5; h[38] = 0; h[39] = -24; h[40] = -40; h[41] = -24; h[42] = 0; h[43] = 5; h[44] = 2;
-		h[45] = 2; h[46] = 5; h[47] = 3; h[48] = -12; h[49] = -24; h[50] = -12; h[51] = 3; h[52] = 5; h[53] = 2;
-		h[54] = 1; h[55] = 4; h[56] = 5; h[57] = 3; h[58] = 0; h[59] = 3; h[60] = 5; h[61] = 4; h[62] = 1;
-		h[63] = 1; h[64] = 2; h[65] = 4; h[66] = 5; h[67] = 5; h[68] = 5; h[69] = 4; h[70] = 2; h[71] = 1;
-		h[72] = 0; h[73] = 1; h[74] = 1; h[75] = 2; h[76] = 2; h[77] = 2; h[78] = 1; h[79] = 1; h[80] = 0;
-	}
+
+	// double* h = new double[size * size];
+
+	// if(size == 3)
+	// {
+	// 	h[0] = -1; h[1] = -1; h[2] = -1;
+	// 	h[3] = -1; h[4] = 8; h[5] = -1;
+	// 	h[6] = -1; h[7] = -1; h[8] = -1;
+	// }
+	// else if(size == 5)
+	// {
+	// 	h[0] = -1; h[1] = 3; h[2] = -4; h[3] = -3; h[4] =  -1;
+	// 	h[5] = -3; h[6] = 0; h[7] = 6; h[8] = 0; h[9] =  -3;
+	// 	h[10] = -4; h[11] = 6; h[12] = 20; h[13] = 6; h[14] =  -4;
+	// 	h[15] = -3; h[16] = 0; h[17] = 6; h[18] = 0; h[19] =  -3;
+	// 	h[20] = -1; h[21] = 3; h[22] = -4; h[23] = -3; h[24] =  -1;
+	// }
+	// else if(size == 7)
+	// {
+	// 	h[0] = -2; h[1] = -3; h[2] = -4; h[3] = -6; h[4] = -4; h[5] = -3; h[6] = -2;
+	// 	h[7] = -3; h[8] = -5; h[9] = -4; h[10] = -3; h[11] = -4; h[12] = -5; h[13] = -3;
+	// 	h[14] = -4; h[15] = -4; h[16] = 9; h[17] = 20; h[18] = 9; h[19] = -4; h[20] = -4;
+	// 	h[21] = -6; h[22] = -3; h[23] = 20; h[24] = 36; h[25] = 20; h[26] = -3; h[27] = -6;
+	// 	h[28] = -4; h[29] = -4; h[30] = 9; h[31] = 20; h[32] = 9; h[33] = -4; h[34] = -4;
+	// 	h[35] = -3; h[36] = -5; h[37] = -4; h[38] = -3; h[39] = -4; h[40] = -5; h[41] = -3;
+	// 	h[42] = -2; h[43] = -3; h[44] = -4; h[45] = -6; h[46] = -4; h[47] = -3; h[48] = -2;
+
+	// }
+	// else
+	// {
+	// 	h[0] = 0; h[1] = 1; h[2] = 1; h[3] = 2; h[4] = 2; h[5] = 2; h[6] = 1; h[7] = 1; h[8] = 0;
+	// 	h[9] = 1; h[10] = 2; h[11] = 4; h[12] = 5; h[13] = 5; h[14] = 5; h[15] = 4; h[16] = 2; h[17] = 1;
+	// 	h[18] = 1; h[19] = 4; h[20] = 5; h[21] = 3; h[22] = 0; h[23] = 3; h[24] = 5; h[25] = 4; h[26] = 1;
+	// 	h[27] = 2; h[28] = 5; h[29] = 3; h[30] = -12; h[31] = -24; h[32] = -12; h[33] = 3; h[34] = 5; h[35] = 2;
+	// 	h[36] = 2; h[37] = 5; h[38] = 0; h[39] = -24; h[40] = -40; h[41] = -24; h[42] = 0; h[43] = 5; h[44] = 2;
+	// 	h[45] = 2; h[46] = 5; h[47] = 3; h[48] = -12; h[49] = -24; h[50] = -12; h[51] = 3; h[52] = 5; h[53] = 2;
+	// 	h[54] = 1; h[55] = 4; h[56] = 5; h[57] = 3; h[58] = 0; h[59] = 3; h[60] = 5; h[61] = 4; h[62] = 1;
+	// 	h[63] = 1; h[64] = 2; h[65] = 4; h[66] = 5; h[67] = 5; h[68] = 5; h[69] = 4; h[70] = 2; h[71] = 1;
+	// 	h[72] = 0; h[73] = 1; h[74] = 1; h[75] = 2; h[76] = 2; h[77] = 2; h[78] = 1; h[79] = 1; h[80] = 0;
+	// }
+
+/***************** Generalised Kernel *******************/
 
 	double* v = new double[size * size];
 	double sigma = (double(size)/6);
-	// for(int i=0;i<size;i++)
-	// {
-	// 	for(int j=0;j<size;j++)
-	// 	{
-	// 		int x = abs(i-mid);
-	// 		int y = abs(j-mid);
-	// 		float q = 2 * PI * pow(sigma, 2);
-	// 		int p = pow(x, 2) + pow(y, 2);
-	// 		h[i*size + j] = (float)(-(1/(PI * pow(sigma, 4))) * (1 - p/q) * exp(-p/q));
-	// 		h[i*size + j] *= 426.3;
-	// 		cout << -(1/(PI * pow(sigma, 4))) * (1 - p/q) * exp(-p/q) << " " << i << " " << j << " " << p << endl;
-	// 	}
-	// }
+
 	int kernelSize = size;
 	for(int i = -(kernelSize/2); i<=(kernelSize/2); i++)
     {
@@ -333,7 +341,7 @@ uint8_t* applyLoG(Mat image, int size, int type)
         for(int j = -(kernelSize/2); j<=(kernelSize/2); j++)
         {
 
-            double L_xy = -1/(PI * pow(sigma,4))*(1 - ((pow(i,2) + pow(j,2))/(2*pow(sigma,2))))*exp(-((pow(i,2) + pow(j,2))/(2*pow(sigma,2))));
+            double L_xy = -(1/(PI * pow(sigma,4)))*(1 - ((pow(i,2) + pow(j,2))/(2*pow(sigma,2))))*exp(-((pow(i,2) + pow(j,2))/(2*pow(sigma,2))));
             //L_xy*=426.3;
             v[(i + kernelSize/2)*size  + (j + kernelSize/2)] = L_xy;
         }
@@ -345,20 +353,11 @@ uint8_t* applyLoG(Mat image, int size, int type)
 		for(int j=0;j<size;j++)
 		{
 			sum += (float)v[i*size + j];
-			// cout << (float)v[i*size + j] << " ";
+			//cout << (float)v[i*size + j] << " ";
 		}
-		// cout << endl;
+		//cout << endl;
 	}
-	for(int i=0;i<size;i++)
-	{
-		for(int j=0;j<size;j++)
-		{
-			v[i*size + j] = v[i*size + j]/abs(sum);
-			// cout << (float)v[i*size + j] << " ";
-		}
-		// cout << endl;
-	}
-	//cout << "Filter Sum" << " " << sum << endl;
+	
 	return convolve(image, v, size, type);	
 }
 
