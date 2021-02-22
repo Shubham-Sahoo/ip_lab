@@ -203,7 +203,7 @@ public:
 
 	double magnitude()
 	{
-		return sqrt(real*real + img*img);
+		return sqrt((this->real)*(this->real) + (this->img)*(this->img));
 	}
 	void print() {
 		cout << real << " + " << img << "i";
@@ -225,8 +225,7 @@ void Transpose(T** matrix, int N)
 	}
 }
 
-template<typename T>
-void FFTShift(T** matrix, int N)
+template<typename T> T** FFTShift(T** matrix, int N)
 {
 	T temp;
 	int offset = N / 2;
@@ -247,6 +246,7 @@ void FFTShift(T** matrix, int N)
 			matrix[i - offset][j + offset] = temp;
 		}
 	}
+	return matrix;
 }
 
 Mat FFTShift(Mat matrix, int N)
@@ -410,7 +410,8 @@ ComplexFloat** FFT2(Mat& source) {
 	return FFT2Result_h;
 }
 
-ComplexFloat** IFFT2(ComplexFloat** source, int N) {
+ComplexFloat** IFFT2(ComplexFloat** source, int N) 
+{
 
 	//cout << "Applying IFFT2" << endl;
 
@@ -433,8 +434,6 @@ ComplexFloat** IFFT2(ComplexFloat** source, int N) {
 		}
 	}
 	Transpose<ComplexFloat>(ifftResult, N);
-
-	cout << endl;
 
 	return ifftResult;
 }
@@ -475,24 +474,33 @@ void Complex2Mat(ComplexFloat** source, Mat& dest, int N, bool shift = false, fl
 	//cout << "Min: " << min << " Max:" << max;
 }
 
-Mat applyideal_low(Mat dft, int n, int m, int cutoff, int type)
+ComplexFloat **applyideal_low(ComplexFloat **fft_im, Mat dft, int n, int m, int cutoff, int type)
 {
 	Mat image(n, m, CV_32F, Scalar(0));
 	Mat dft_shift = FFTShift(dft,n);
+	ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
 	uint8_t *fil = new uint8_t[n*m];
+	cutoff = cutoff*sqrt(n);
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
-			if(dist<=float(cutoff))
+			//float dist1 = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			float dist1 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(0)))*(j-(float(0))));
+			float dist2 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(m)))*(j-(float(m))));
+			float dist3 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(0)))*(j-(float(0))));
+			float dist4 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(m)))*(j-(float(m))));
+			if((dist1<=float(cutoff))||(dist2<=float(cutoff))||(dist3<=float(cutoff))||(dist4<=float(cutoff)))
 			{
 				fil[i*n+j] = 0;
+				fft_im_shift[i][j] *= 1;
 				//cout<<i<<" "<<j<<"\n";
 			}
 			else
 			{
-				fil[i*n+j] = 1;
+				fil[i*n+j] *= 0;
+				fft_im_shift[i][j] *= 0;
+				// cout<<fft_im_shift[]
 			}
 		}
 	}
@@ -503,6 +511,7 @@ Mat applyideal_low(Mat dft, int n, int m, int cutoff, int type)
 		for(int j=0;j<m;j++)
 		{
 			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
+			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
 			//cout<<image.at<float>(i,j)<<" ";
 			if(image.at<float>(i,j)>max_val)
 			{
@@ -527,7 +536,9 @@ Mat applyideal_low(Mat dft, int n, int m, int cutoff, int type)
 
 	//Mat filter(n, m, CV_8UC1, Scalar(0));
 	//filter.data = fil;
-	return image;
+	//fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
+
+	return fft_im_shift;
 
 }
 
@@ -746,11 +757,14 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 	Mat fft_res(n, m, CV_32F, Scalar(0));
 	
 	Complex2Mat(dft,fft_res,n,false,255);
-
-	Mat newimage;
+	ComplexFloat** newimage = new ComplexFloat*[n];
+	for(int i=0;i<n;i++)
+	{
+		newimage[i] = new ComplexFloat[m];
+	}
 	switch(filterid){
 		case 0:
-			newimage = applyideal_low(fft_res, n, m, cutoff, 0);
+			newimage = applyideal_low(dft, fft_res, n, m, cutoff, 0);
 			break;
 		// case 1:
 		// 	newimage = applyideal_high(image, kernel, 1);
@@ -773,20 +787,39 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 	}
 
 
+	Mat filtered_fft(n,m,CV_8UC1,Scalar(0));
+	ComplexFloat **shift_new = FFTShift(newimage,n);
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			filtered_fft.at<uint8_t>(i,j) = uint8_t(((shift_new[i][j]).magnitude())*255);
+		}
+	}
+	
+
+	ComplexFloat **result_ifft;
+	result_ifft = IFFT2(newimage,n);
+	ComplexFloat **result_c = result_ifft;
+
+	Mat result_f(n, m, CV_32F, Scalar(0));
+	Complex2Mat(result_c,result_f,n);
+
 	Mat res(n,m,CV_8UC1,Scalar(0));
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			res.at<uint8_t>(i,j) = uint8_t((newimage.at<float>(i,j))*255);
+			res.at<uint8_t>(i,j) = uint8_t((result_f.at<float>(i,j))*255);
 		}
 	}
-	//res = newimage;
 
-	Mat result(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
+	Mat result(Size((image.cols)*3,image.rows),CV_8UC1,Scalar::all(0));
 	Mat mat_im = result(Rect(0,0,image.cols,image.rows));
 	image.copyTo(mat_im);
 	mat_im = result(Rect(image.cols,0,image.cols,image.rows));
+	filtered_fft.copyTo(mat_im);
+	mat_im = result(Rect(2*image.cols,0,image.cols,image.rows));
 	res.copyTo(mat_im);
 	imshow("Tracker", result);
 
@@ -821,7 +854,7 @@ int main()
 	vector<string> filters = {"Ideal-LPF", "Ideal-HPF", "Gaussian-LPF", "Gaussian-HPF", "Buuterworth-LPF", "Buuterworth-HPF"};
 	createTrackbar("File-ID", "Tracker", u.file_id, imgs.size() - 1, myFunc, &u);
 	createTrackbar("Filter-ID", "Tracker", u.filter_id, filters.size() - 1, myFunc, &u);
-	createTrackbar("Kernel_size", "Tracker", u.cutoff_size, 100, myFunc, &u);
+	createTrackbar("Kernel_size", "Tracker", u.cutoff_size, 50, myFunc, &u);
 	Mat image = imread(imgs[id], IMREAD_GRAYSCALE);
 	Mat res_im( image.cols,image.rows, CV_8UC1, Scalar(255));
 	cv::putText(res_im, //target image
@@ -832,10 +865,12 @@ int main()
         CV_RGB(0, 0, 0), //font color
         2);
 	
-	Mat res(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
+	Mat res(Size(image.cols*3,image.rows),CV_8UC1,Scalar::all(0));
 	Mat mat_im = res(Rect(0,0,image.cols,image.rows));
 	image.copyTo(mat_im);
 	mat_im = res(Rect(image.cols,0,image.cols,image.rows));
+	res_im.copyTo(mat_im);
+	mat_im = res(Rect(2*image.cols,0,image.cols,image.rows));
 	res_im.copyTo(mat_im);
 	imshow("Tracker", res);
 	waitKey();
