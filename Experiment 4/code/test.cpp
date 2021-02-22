@@ -62,430 +62,654 @@ int ListDir(const std::string& path, vector<string>& v) {
   return 0;
 }
 
-// uint8_t* convolve(Mat image, double* h, int size, int type)
-// {
-// 	uint8_t* pixel = (uint8_t*)image.data;
-// 	int n = image.rows;
-// 	int m = image.cols;
+uint8_t* convolve(Mat image, double* h, int size, int type)
+{
+	uint8_t* pixel = (uint8_t*)image.data;
+	int n = image.rows;
+	int m = image.cols;
 
-// 	uint8_t* newimage = new uint8_t[n*m];
-// 	int s = size / 2;
+	uint8_t* newimage = new uint8_t[n*m];
+	int s = size / 2;
 
-// 	int max_v = 0;
-// 	int min_v = 0;
-// 	for(int i = 0; i < n; i++)
-// 	{
-// 		for(int j = 0; j < m; j++)
-// 		{
-// 			float sum = 0;
-// 			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
-// 				continue;
-// 			for(int p = -s; p <= s; p++)
-// 			{
-// 				for(int r = -s; r<=s; r++)
-// 				{
-// 					int posim = (i + p) * m + (j + r);
-// 					int posh =  (p + s) * size + (r + s);
-// 					sum += h[posh] * (int)pixel[posim];
-// 				}
-// 			}
+	int max_v = 0;
+	int min_v = 0;
+	for(int i = 0; i < n; i++)
+	{
+		for(int j = 0; j < m; j++)
+		{
+			float sum = 0;
+			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
+				continue;
+			for(int p = -s; p <= s; p++)
+			{
+				for(int r = -s; r<=s; r++)
+				{
+					int posim = (i + p) * m + (j + r);
+					int posh =  (p + s) * size + (r + s);
+					sum += h[posh] * (int)pixel[posim];
+				}
+			}
 
-// /*********** Linear Scaled ***************/
 
-// 			// if(sum>max_v)
-// 			// {
-// 			// 	max_v=sum;
-// 			// }
-// 			// if(sum<min_v)
-// 			// {
-// 			// 	min_v=sum;
-// 			// }
-// 			// newimage[i * m + j] = (uint8_t)floor(sum);
-// 			// if(sum<0)
-// 			// {
-// 			// 	sum=0;
-// 			// }
-// 			// if(sum>255)
-// 			// {
-// 			// 	sum=255;
-// 			// }
-// 			// if((type!=7))//&&(type!=8))
-// 			// 	newimage[i * m + j] = (uint8_t)floor(sum);
+			if(type != 7 && type!=8)
+			{
+				if(sum<0)
+				{
+					sum=0;
+				}
+				if(sum>255)
+				{
+					sum=255;
+				}
+				newimage[i*m + j] = (uint8_t)floor(sum);
+				if(type == 8)
+					newimage[i*m + j] = (uint8_t)(255 - (int)newimage[i*m + j]);
+			}
+			else
+			{
+				if(sum<0)
+					sum = -sum;
+				if(sum>255)
+					sum = 255;
+				newimage[i*m + j] = (uint8_t)floor(sum);
+				// cout << (int)newimage[i*m + j] << " ";
+			}
+		}
+	}
 
-// /************ Thresholded **************/
+	min_v = (min_v<0)?min_v:0;
+	max_v = (max_v>255)?max_v:255;
 
-// 			if(type != 7 && type!=8)
-// 			{
-// 				if(sum<0)
-// 				{
-// 					sum=0;
-// 				}
-// 				if(sum>255)
-// 				{
-// 					sum=255;
-// 				}
-// 				newimage[i*m + j] = (uint8_t)floor(sum);
-// 				if(type == 8)
-// 					newimage[i*m + j] = (uint8_t)(255 - (int)newimage[i*m + j]);
-// 			}
-// 			else
-// 			{
-// 				if(sum<0)
-// 					sum = -sum;
-// 				if(sum>255)
-// 					sum = 255;
-// 				newimage[i*m + j] = (uint8_t)floor(sum);
-// 				// cout << (int)newimage[i*m + j] << " ";
-// 			}
-// 		}
-// 	}
+	if(type==7)
+	{
+		for(int i = 0; i < n; i++)
+		{
+			for(int j = 0; j < m; j++)
+			{
+				newimage[i * m + j] = (uint8_t)floor(double(newimage[i * m + j]*255)/(max_v-min_v));
+			}
+		}
+	}
+	return newimage;
+}
 
-// 	min_v = (min_v<0)?min_v:0;
-// 	max_v = (max_v>255)?max_v:255;
+uint8_t* fft2()
+{
 
-// 	if(type==7)
-// 	{
-// 		for(int i = 0; i < n; i++)
-// 		{
-// 			for(int j = 0; j < m; j++)
-// 			{
-// 				newimage[i * m + j] = (uint8_t)floor(double(newimage[i * m + j]*255)/(max_v-min_v));
-// 			}
-// 		}
-// 	}
-// 	return newimage;
-// }
+}
 
-// uint8_t* applymean(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
-// 	int mid = (size)/2;
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 			h[i*size + j] = float(1/float(size * size));
-// 	}
-// 	return convolve(image, h, size, type);
-// }
-
-// uint8_t* applymedian(Mat image, int size, int type)
-// {
-// 	uint8_t* pixel = (uint8_t*)image.data;
-// 	int n = image.rows;
-// 	int m = image.cols;
-
-// 	uint8_t* newimage = new uint8_t[n*m];
-// 	int s = size / 2;
+uint8_t* ifft2()
+{
 	
-// 	for(int i = 0; i < n; i++)
-// 	{
-// 		for(int j = 0; j < m; j++)
-// 		{
-// 			float sum = 0;
-// 			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
-// 				continue;
-// 			vector<int> v;
-// 			for(int p = -s; p <= s; p++)
-// 			{
-// 				for(int r = -s; r<=s; r++)
-// 				{
-// 					int posim = (i + p) * m + (j + r);
-// 					v.push_back((int)pixel[posim]);
-// 				}
-// 			}
-// 			sort(v.begin(), v.end());
-// 			float mid;
-// 			if(v.size() % 2)
-// 				mid = v[v.size()/2];
-// 			else
-// 				mid = (v[v.size()/2] + v[v.size()/2 - 1])/2.0;
-// 			newimage[i * m + j] = (uint8_t)floor(mid);
-// 		}
-// 	}
-// 	return newimage;
-// }
+}
+
+class ComplexFloat {
+public:
+	double real;
+	double img;
+
+public:
+	ComplexFloat()
+	{
+		this->real = 0;
+		this->img = 0;
+	}
+	ComplexFloat(double real, double img)
+	{
+		this->real = real;
+		this->img = img;
+	}
+	ComplexFloat operator+(const ComplexFloat& b)
+	{
+		double r = real + b.real;
+		double i = img + b.img;
+		return ComplexFloat(r, i);
+	}
+	ComplexFloat operator-(const ComplexFloat& b)
+	{
+		double r = real - b.real;
+		double i = img - b.img;
+		return ComplexFloat(r, i);
+	}
+	ComplexFloat operator*(const ComplexFloat& b)
+	{
+		double k1 = b.real*(real + img);
+		double k2 = real*(b.img - b.real);
+		double k3 = img*(b.img + b.real);
+		return ComplexFloat(k1 - k3, k1 + k2);
+	}
+
+	ComplexFloat operator*(const double& b)
+	{
+		return ComplexFloat(real*b, img*b);
+	}
+
+	void operator*=(const double& b)
+	{
+		real *= b;
+		img *= b;
+	}
+
+	ComplexFloat operator/(const double& b)
+	{
+		return ComplexFloat(real / b, img / b);
+	}
+
+	void operator=(const double& b)
+	{
+		real = b;
+		img = 0;
+	}
+
+	double magnitude()
+	{
+		return sqrt(real*real + img*img);
+	}
+	void print() {
+		cout << real << " + " << img << "i";
+	}
+
+};
+
+template<typename T>
+void Transpose(T** matrix, int N)
+{
+	T temp;
+	for (int i = 0; i < N; i++) {
+		T* start = matrix[i] + i;
+		for (int j = i + 1; j < N; j++) {
+			temp = matrix[i][j];
+			matrix[i][j] = matrix[j][i];
+			matrix[j][i] = temp;
+		}
+	}
+}
+
+template<typename T>
+void FFTShift(T** matrix, int N)
+{
+	T temp;
+	int offset = N / 2;
+	for (int i = 0; i < offset; i++) {
+		T* start = matrix[i] + i;
+		for (int j = 0; j < offset; j++) {
+			temp = matrix[i][j];
+			matrix[i][j] = matrix[i + offset][j + offset];
+			matrix[i + offset][j + offset] = temp;
+		}
+	}
+
+	for (int i = N / 2; i < N; i++) {
+		T* start = matrix[i] + i;
+		for (int j = 0; j < offset; j++) {
+			temp = matrix[i][j];
+			matrix[i][j] = matrix[i - offset][j + offset];
+			matrix[i - offset][j + offset] = temp;
+		}
+	}
+}
+
+Mat FFTShift(Mat matrix, int N)
+{
+	float temp;
+	int offset = N / 2;
+	for (int i = 0; i < offset; i++) {
+		for (int j = 0; j < offset; j++) {
+			temp = matrix.at<float>(i, j);
+			matrix.at<float>(i, j) = matrix.at<float>(i + offset, j + offset);
+			matrix.at<float>(i + offset, j + offset) = temp;
+		}
+	}
+
+	for (int i = N / 2; i < N; i++) {
+		for (int j = 0; j < offset; j++) {
+			temp = matrix.at<float>(i, j);
+			matrix.at<float>(i, j) = matrix.at<float>(i - offset, j + offset);
+			matrix.at<float>(i - offset, j + offset) = temp;
+		}
+	}
+	return matrix;
+}
+
+//ASSUMPTIONS
+//WHEN CALLING THIS FUNCTION
+//arrSize = N
+//gap = 1
+//zeroLoc = 0
+
+ComplexFloat* FFT(uchar* x, int N, int arrSize, int zeroLoc, int gap)
+{
+	ComplexFloat* fft;
+	fft = new ComplexFloat[N];
+
+	int i;
+	if (N == 2)
+	{
+		fft[0] = ComplexFloat(x[zeroLoc] + x[zeroLoc + gap], 0);
+		fft[1] = ComplexFloat(x[zeroLoc] - x[zeroLoc + gap], 0);
+	}
+	else
+	{
+		ComplexFloat wN = ComplexFloat(cos(2 * M_PI / N), sin(-2 * M_PI / N));//exp(-j2*pi/N)
+		ComplexFloat w = ComplexFloat(1, 0);
+		gap *= 2;
+		ComplexFloat* X_even = FFT(x, N / 2, arrSize, zeroLoc, gap); //N/2 POINT DFT OF EVEN X's
+		ComplexFloat* X_odd = FFT(x, N / 2, arrSize, zeroLoc + (arrSize / N), gap); //N/2 POINT DFT OF ODD X's
+		ComplexFloat todd;
+		for (i = 0; i < N / 2; ++i)
+		{
+			//FFT(0) IS EQUAL TO FFT(N-1) SYMMETRICAL AROUND N/2
+			todd = w*X_odd[i];
+			fft[i] = X_even[i] + todd;
+			fft[i + N / 2] = X_even[i] - todd;
+			w = w * wN;
+		}
+
+		delete[] X_even;
+		delete[] X_odd;
+	}
+
+	return fft;
+}
+ComplexFloat* FFT(ComplexFloat* x, int N, int arrSize, int zeroLoc, int gap)
+{
+	ComplexFloat* fft;
+	fft = new ComplexFloat[N];
+
+	int i;
+	if (N == 2)
+	{
+		fft[0] = x[zeroLoc] + x[zeroLoc + gap];
+		fft[1] = x[zeroLoc] - x[zeroLoc + gap];
+	}
+	else
+	{
+		ComplexFloat wN = ComplexFloat(cos(2 * M_PI / N), sin(-2 * M_PI / N));//exp(-j2*pi/N)
+		ComplexFloat w = ComplexFloat(1, 0);
+		gap *= 2;
+		ComplexFloat* X_even = FFT(x, N / 2, arrSize, zeroLoc, gap); //N/2 POINT DFT OF EVEN X's
+		ComplexFloat* X_odd = FFT(x, N / 2, arrSize, zeroLoc + (arrSize / N), gap); //N/2 POINT DFT OF ODD X's
+		ComplexFloat todd;
+		for (i = 0; i < N / 2; ++i)
+		{
+			//FFT(0) IS EQUAL TO FFT(N-1) SYMMETRICAL AROUND N/2
+			todd = w*X_odd[i];
+			fft[i] = X_even[i] + todd;
+			fft[i + N / 2] = X_even[i] - todd;
+			w = w * wN;
+		}
+
+		delete[] X_even;
+		delete[] X_odd;
+	}
+
+	return fft;
+}
+ComplexFloat* IFFT(ComplexFloat* fft, int N, int arrSize, int zeroLoc, int gap)
+{
+	ComplexFloat* signal;
+	signal = new ComplexFloat[N];
+
+	int i;
+	if (N == 2)
+	{
+		signal[0] = fft[zeroLoc] + fft[zeroLoc + gap];
+		signal[1] = fft[zeroLoc] - fft[zeroLoc + gap];
+	}
+	else
+	{
+		ComplexFloat wN = ComplexFloat(cos(2 * M_PI / N), sin(2 * M_PI / N));//exp(j2*pi/N)
+		ComplexFloat w = ComplexFloat(1, 0);
+		gap *= 2;
+		ComplexFloat* X_even = IFFT(fft, N / 2, arrSize, zeroLoc, gap); //N/2 POINT DFT OF EVEN X's
+		ComplexFloat* X_odd = IFFT(fft, N / 2, arrSize, zeroLoc + (arrSize / N), gap); //N/2 POINT DFT OF ODD X's
+		ComplexFloat todd;
+		for (i = 0; i < N / 2; ++i)
+		{
+			//FFT(0) IS EQUAL TO FFT(N-1) SYMMETRICAL AROUND N/2
+			todd = w * X_odd[i];
+			signal[i] = (X_even[i] + todd) * 0.5;
+			signal[i + N / 2] = (X_even[i] - todd) * 0.5;
+			w = w * wN; // Get the next root(conjugate) among Nth roots of unity
+		}
+
+		delete[] X_even;
+		delete[] X_odd;
+	}
+
+	return signal;
+}
+
+ComplexFloat** FFT2(Mat& source) {
+	//cout << "Applying FFT2" << endl;
+
+	if (source.rows != source.cols) {
+		cout << "Image is not Valid";
+		return nullptr;
+	}
+	int N = source.rows;
+	//cout << "Image size:" << N << endl;
+	ComplexFloat** FFT2Result_h;
+	FFT2Result_h = new ComplexFloat*[N];
+
+	// ROW WISE FFT
+	for (int i = 0; i < N; i++) {
+		uchar* row = source.ptr<uchar>(i);
+		FFT2Result_h[i] = FFT(row, N, N, 0, 1);
+	}
+
+	//cout << "final: " << endl;
+	Transpose<ComplexFloat>(FFT2Result_h, N);
+
+	// COLUMN WISE FFT
+	for (int i = 0; i < N; i++) {
+		FFT2Result_h[i] = FFT(FFT2Result_h[i], N, N, 0, 1);
+	}
+	Transpose<ComplexFloat>(FFT2Result_h, N);
+
+	return FFT2Result_h;
+}
+
+ComplexFloat** IFFT2(ComplexFloat** source, int N) {
+
+	//cout << "Applying IFFT2" << endl;
+
+	ComplexFloat** ifftResult;
+	ifftResult = new ComplexFloat*[N];
+	// ROW WISE FFT
+	for (int i = 0; i < N; i++) {
+		ifftResult[i] = IFFT(source[i], N, N, 0, 1);
+	}
+
+	//cout << "final: " << endl;
+	Transpose<ComplexFloat>(ifftResult, N);
+
+	int d = N*N;
+	// COLUMN WISE FFT
+	for (int i = 0; i < N; i++) {
+		ifftResult[i] = IFFT(ifftResult[i], N, N, 0, 1);
+		for (int j = 0; j < N; j++) {
+			ifftResult[i][j] = ifftResult[i][j] / d;
+		}
+	}
+	Transpose<ComplexFloat>(ifftResult, N);
+
+	cout << endl;
+
+	return ifftResult;
+}
+
+void Complex2Mat(ComplexFloat** source, Mat& dest, int N, bool shift = false, float maxF = 1.0) {
+	// Convert a complex matrix to a Mat data structure (magnitude of 
+	// the complex no. are used) for showing as an image
+	if (shift) {
+		FFTShift(source, N);
+	}
+	dest = Mat(N, N, CV_32F, cv::Scalar::all(0));
+	float min = 99999;
+	float max = 0;
+
+	// Find min and max
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			source[i][j] = source[i][j] / N;
+			float m = source[i][j].magnitude();
+			if (m < min) {
+				min = m;
+			}
+			if (m > max) {
+				max = m;
+			}
+		}
+	}
 
 
-// uint8_t* applygaussian(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
-// 	int mid = (size)/2;
-// 	double normal = 0;
-// 	double sigma = (double(size)/6);
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 		{
-// 			double x = abs(i-mid);
-// 			double y = abs(j-mid);
-// 			double q = pow(sigma, 2)*2*PI;
-// 			h[i*size + j] = double(1/q) * exp( - (pow(x,2) + pow(y,2)) / q);
-// 			normal += h[i*size + j];
-// 		}
-// 	}
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 		{	
-// 			h[i*size + j] /= normal;
-// 		}
-// 	}
-// 	return convolve(image, h, size, type);
-// }
+	// Normalize the image
+	float range = (max - min);
+	for (int i = 0; i < N; i++) {
+		float *p = dest.ptr<float>(i);
+		for (int j = 0; j < N; j++) {
+			p[j] = (source[i][j].magnitude() - min) * maxF / range;
+		}
+	}
+	//cout << "Min: " << min << " Max:" << max;
+}
 
-// uint8_t* applylaplacian(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
-// 	int mid = floor((size)/2);
+Mat applyideal_low(Mat dft, int n, int m, int cutoff, int type)
+{
+	Mat image(n, m, CV_32F, Scalar(0));
+	Mat dft_shift = FFTShift(dft,n);
+	uint8_t *fil = new uint8_t[n*m];
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			if(dist<=float(cutoff))
+			{
+				fil[i*n+j] = 0;
+				//cout<<i<<" "<<j<<"\n";
+			}
+			else
+			{
+				fil[i*n+j] = 1;
+			}
+		}
+	}
+	float max_val = 0;
+	float min_val = 100000;
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
+			//cout<<image.at<float>(i,j)<<" ";
+			if(image.at<float>(i,j)>max_val)
+			{
+				max_val = image.at<float>(i,j);
+			}
+			if(image.at<float>(i,j)<min_val)
+			{
+				min_val = image.at<float>(i,j);
+			}
+		}
+	}
 
-// /************** Weighted Laplacian according to distance from center **************/
+	//cout<<max_val<<"\t"<<min_val;
 
-// 	// double sum = 0;
-// 	// for(int i=0;i<size;i++)
-// 	// {
-// 	// 	for(int j=0;j<size;j++)
-// 	// 	{	
-			
-// 	// 		if(i==mid && j==mid)
-// 	// 		{
-// 	// 			continue;
-// 	// 		}
-			
-// 	// 		h[i*size + j] = -floor(floor(size/2)/sqrt(pow(i-mid,2)+pow(j-mid,2)));
-// 	// 		sum += h[i*size + j];
-			
-// 	// 	}
-		
-// 	// }
-// 	// h[mid*size + mid] = -sum;
+	// for(int i=0;i<n;i++)
+	// {
+	// 	for(int j=0;j<m;j++)
+	// 	{
+	// 		image.at<float>(i,j) = (image.at<float>(i,j)-min_val)/(max_val);
+	// 	}
+	// }
 
-// /************** Normal Laplacian ***********************/
+	//Mat filter(n, m, CV_8UC1, Scalar(0));
+	//filter.data = fil;
+	return image;
 
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 			h[i*size + j] = 1;
-// 	}	
-// 	h[mid * size + mid] = -(pow(size,2) - 1);
+}
 
-// 	return convolve(image, h, size, type);
-// }
+uint8_t* applyideal_high(Mat image, int size, int type)
+{
+	uint8_t* pixel = (uint8_t*)image.data;
+	int n = image.rows;
+	int m = image.cols;
 
-
-
-// uint8_t* applyLoG(Mat image, int size, int type)
-// {
-
-// /**************** Operator cascading Output ****************/
-
-// 	// uint8_t* pixel = applygaussian(image, size, 1);
-// 	// int n = image.rows;
-// 	// int m = image.cols;
-// 	// Mat res(n, m, CV_8UC1, Scalar(0));
-// 	// res.data = pixel;
-// 	// return applylaplacian(res, size, 7);
-
-
-// /**************** Hard coded Kernels for LoG *****************/
-
-
-// 	// double* h = new double[size * size];
-
-// 	// if(size == 3)
-// 	// {
-// 	// 	h[0] = -1; h[1] = -1; h[2] = -1;
-// 	// 	h[3] = -1; h[4] = 8; h[5] = -1;
-// 	// 	h[6] = -1; h[7] = -1; h[8] = -1;
-// 	// }
-// 	// else if(size == 5)
-// 	// {
-// 	// 	h[0] = -1; h[1] = 3; h[2] = -4; h[3] = -3; h[4] =  -1;
-// 	// 	h[5] = -3; h[6] = 0; h[7] = 6; h[8] = 0; h[9] =  -3;
-// 	// 	h[10] = -4; h[11] = 6; h[12] = 20; h[13] = 6; h[14] =  -4;
-// 	// 	h[15] = -3; h[16] = 0; h[17] = 6; h[18] = 0; h[19] =  -3;
-// 	// 	h[20] = -1; h[21] = 3; h[22] = -4; h[23] = -3; h[24] =  -1;
-// 	// }
-// 	// else if(size == 7)
-// 	// {
-// 	// 	h[0] = -2; h[1] = -3; h[2] = -4; h[3] = -6; h[4] = -4; h[5] = -3; h[6] = -2;
-// 	// 	h[7] = -3; h[8] = -5; h[9] = -4; h[10] = -3; h[11] = -4; h[12] = -5; h[13] = -3;
-// 	// 	h[14] = -4; h[15] = -4; h[16] = 9; h[17] = 20; h[18] = 9; h[19] = -4; h[20] = -4;
-// 	// 	h[21] = -6; h[22] = -3; h[23] = 20; h[24] = 36; h[25] = 20; h[26] = -3; h[27] = -6;
-// 	// 	h[28] = -4; h[29] = -4; h[30] = 9; h[31] = 20; h[32] = 9; h[33] = -4; h[34] = -4;
-// 	// 	h[35] = -3; h[36] = -5; h[37] = -4; h[38] = -3; h[39] = -4; h[40] = -5; h[41] = -3;
-// 	// 	h[42] = -2; h[43] = -3; h[44] = -4; h[45] = -6; h[46] = -4; h[47] = -3; h[48] = -2;
-
-// 	// }
-// 	// else
-// 	// {
-// 	// 	h[0] = 0; h[1] = 1; h[2] = 1; h[3] = 2; h[4] = 2; h[5] = 2; h[6] = 1; h[7] = 1; h[8] = 0;
-// 	// 	h[9] = 1; h[10] = 2; h[11] = 4; h[12] = 5; h[13] = 5; h[14] = 5; h[15] = 4; h[16] = 2; h[17] = 1;
-// 	// 	h[18] = 1; h[19] = 4; h[20] = 5; h[21] = 3; h[22] = 0; h[23] = 3; h[24] = 5; h[25] = 4; h[26] = 1;
-// 	// 	h[27] = 2; h[28] = 5; h[29] = 3; h[30] = -12; h[31] = -24; h[32] = -12; h[33] = 3; h[34] = 5; h[35] = 2;
-// 	// 	h[36] = 2; h[37] = 5; h[38] = 0; h[39] = -24; h[40] = -40; h[41] = -24; h[42] = 0; h[43] = 5; h[44] = 2;
-// 	// 	h[45] = 2; h[46] = 5; h[47] = 3; h[48] = -12; h[49] = -24; h[50] = -12; h[51] = 3; h[52] = 5; h[53] = 2;
-// 	// 	h[54] = 1; h[55] = 4; h[56] = 5; h[57] = 3; h[58] = 0; h[59] = 3; h[60] = 5; h[61] = 4; h[62] = 1;
-// 	// 	h[63] = 1; h[64] = 2; h[65] = 4; h[66] = 5; h[67] = 5; h[68] = 5; h[69] = 4; h[70] = 2; h[71] = 1;
-// 	// 	h[72] = 0; h[73] = 1; h[74] = 1; h[75] = 2; h[76] = 2; h[77] = 2; h[78] = 1; h[79] = 1; h[80] = 0;
-// 	// }
-
-// /***************** Generalised Kernel *******************/
-
-// 	double* v = new double[size * size];
-// 	double sigma = (double(size)/6);
-
-// 	int kernelSize = size;
-// 	for(int i = -(kernelSize/2); i<=(kernelSize/2); i++)
-//     {
-
-//         for(int j = -(kernelSize/2); j<=(kernelSize/2); j++)
-//         {
-
-//             double L_xy = -(1/(PI * pow(sigma,4)))*(1 - ((pow(i,2) + pow(j,2))/(2*pow(sigma,2))))*exp(-((pow(i,2) + pow(j,2))/(2*pow(sigma,2))));
-//             //L_xy*=426.3;
-//             v[(i + kernelSize/2)*size  + (j + kernelSize/2)] = L_xy;
-//         }
-
-//     }
-// 	float sum = 0;
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 		{
-// 			sum += (float)v[i*size + j];
-// 			//cout << (float)v[i*size + j] << " ";
-// 		}
-// 		//cout << endl;
-// 	}
+	uint8_t* newimage = new uint8_t[n*m];
+	int s = size / 2;
 	
-// 	return convolve(image, v, size, type);	
-// }
-
-// uint8_t* applyprewitt(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
-// 	double* v = new double[size * size];
-
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 		{
-// 			if(j==0)
-// 			{
-// 				h[i*size+j] = 1;
-// 			}
-// 			if(i==0)
-// 			{
-// 				v[i*size+j] = 1;
-// 			}
-// 			if(j==size-1)
-// 			{
-// 				h[i*size+j] = -1;
-// 			}
-// 			if(i==size-1)
-// 			{
-// 				v[i*size+j] = -1;
-// 			}
-// 			if(i!=0 && j!=0 && i!=size-1 && j!=size-1)
-// 			{
-// 				h[i*size+j] = 0;
-// 				v[i*size+j] = 0;
-// 			}
-
-// 		}	
-// 	}
+	for(int i = 0; i < n; i++)
+	{
+		for(int j = 0; j < m; j++)
+		{
+			float sum = 0;
+			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
+				continue;
+			vector<int> v;
+			for(int p = -s; p <= s; p++)
+			{
+				for(int r = -s; r<=s; r++)
+				{
+					int posim = (i + p) * m + (j + r);
+					v.push_back((int)pixel[posim]);
+				}
+			}
+			sort(v.begin(), v.end());
+			float mid;
+			if(v.size() % 2)
+				mid = v[v.size()/2];
+			else
+				mid = (v[v.size()/2] + v[v.size()/2 - 1])/2.0;
+			newimage[i * m + j] = (uint8_t)floor(mid);
+		}
+	}
+	return newimage;
+}
 
 
-// 	uint8_t *imh = convolve(image, h, size, type);
-// 	uint8_t *imv = convolve(image, v, size, type);
-// 	double *res_p = new double[image.rows * image.cols];
-// 	uint8_t *res = new uint8_t[image.rows * image.cols];
+uint8_t* applygaus_low(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+	int mid = (size)/2;
+	double normal = 0;
+	double sigma = (double(size)/6);
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{
+			double x = abs(i-mid);
+			double y = abs(j-mid);
+			double q = pow(sigma, 2)*2*PI;
+			h[i*size + j] = double(1/q) * exp( - (pow(x,2) + pow(y,2)) / q);
+			normal += h[i*size + j];
+		}
+	}
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{	
+			h[i*size + j] /= normal;
+		}
+	}
+	return convolve(image, h, size, type);
+}
 
-// 	for(int i = 0; i < image.rows; i++)
-// 	{
-// 		for (int j = 0; j < image.cols; j++)
-// 		{
-// 			res_p[i*image.cols+j] = sqrt(pow(imh[i*image.cols+j],2)+pow(imv[i*image.cols+j],2))/sqrt(2);
+uint8_t* applygaus_high(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+	int mid = floor((size)/2);
+
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+			h[i*size + j] = 1;
+	}	
+	h[mid * size + mid] = -(pow(size,2) - 1);
+
+	return convolve(image, h, size, type);
+}
+
+
+
+uint8_t* applybutter_low(Mat image, int size, int type)
+{
+
+
+	double* v = new double[size * size];
+	double sigma = (double(size)/6);
+
+	int kernelSize = size;
+	for(int i = -(kernelSize/2); i<=(kernelSize/2); i++)
+    {
+
+        for(int j = -(kernelSize/2); j<=(kernelSize/2); j++)
+        {
+
+            double L_xy = -(1/(PI * pow(sigma,4)))*(1 - ((pow(i,2) + pow(j,2))/(2*pow(sigma,2))))*exp(-((pow(i,2) + pow(j,2))/(2*pow(sigma,2))));
+            //L_xy*=426.3;
+            v[(i + kernelSize/2)*size  + (j + kernelSize/2)] = L_xy;
+        }
+
+    }
+	float sum = 0;
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{
+			sum += (float)v[i*size + j];
+			//cout << (float)v[i*size + j] << " ";
+		}
+		//cout << endl;
+	}
+	
+	return convolve(image, v, size, type);	
+}
+
+uint8_t* applybutter_high(Mat image, int size, int type)
+{
+	double* h = new double[size * size];
+	double* v = new double[size * size];
+
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{
+			if(j==0)
+			{
+				h[i*size+j] = 1;
+			}
+			if(i==0)
+			{
+				v[i*size+j] = 1;
+			}
+			if(j==size-1)
+			{
+				h[i*size+j] = -1;
+			}
+			if(i==size-1)
+			{
+				v[i*size+j] = -1;
+			}
+			if(i!=0 && j!=0 && i!=size-1 && j!=size-1)
+			{
+				h[i*size+j] = 0;
+				v[i*size+j] = 0;
+			}
+
+		}	
+	}
+
+
+	uint8_t *imh = convolve(image, h, size, type);
+	uint8_t *imv = convolve(image, v, size, type);
+	double *res_p = new double[image.rows * image.cols];
+	uint8_t *res = new uint8_t[image.rows * image.cols];
+
+	for(int i = 0; i < image.rows; i++)
+	{
+		for (int j = 0; j < image.cols; j++)
+		{
+			res_p[i*image.cols+j] = sqrt(pow(imh[i*image.cols+j],2)+pow(imv[i*image.cols+j],2))/sqrt(2);
 			
-// 		}
-// 	}
+		}
+	}
 
-// 	for(int i=0;i<image.rows;i++)
-// 	{
-// 		for (int j = 0; j < image.cols; j++)
-// 		{
-// 			res[i*image.cols+j] = uint8_t(res_p[i*image.cols+j]);
-// 		}
-// 	}
+	for(int i=0;i<image.rows;i++)
+	{
+		for (int j = 0; j < image.cols; j++)
+		{
+			res[i*image.cols+j] = uint8_t(res_p[i*image.cols+j]);
+		}
+	}
 
-// 	return res;
-// }
+	return res;
+}
 
-// uint8_t* applysobelh(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
 
-// 	h[0] = 1;	h[1] = 0;	h[2] = -1;
-// 	h[3] = 2;	h[4] = 0;	h[5] = -2;
-// 	h[6] = 1;	h[7] = 0;	h[8] = -1;
-
-// 	return convolve(image, h, size, type);
-// }
-
-// uint8_t* applysobelv(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
-
-// 	h[0] = 1;	h[1] = 2;	h[2] = 1;
-// 	h[3] = 0;	h[4] = 0;	h[5] = 0;
-// 	h[6] = -1;	h[7] = -2;	h[8] = -1;
-
-// 	return convolve(image, h, size, type);
-// }
-
-// uint8_t* applysobeld(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
-// 	double* v = new double[size * size];
-
-// 	h[0] = 0;	h[1] = 1;	h[2] = 2;
-// 	h[3] = -1;	h[4] = 0;	h[5] = 1;
-// 	h[6] = -2;	h[7] = -1;	h[8] = 0;
-
-// 	v[0] = 2;	v[1] = 1;	v[2] = 0;
-// 	v[3] = 1;	v[4] = 0;	v[5] = -1;
-// 	v[6] = 0;	v[7] = -1;	v[8] = -2;
-
-// 	uint8_t *imh = convolve(image, h, size, type);
-// 	uint8_t *imv = convolve(image, v, size, type);
-// 	double *res_p = new double[image.rows * image.cols];
-// 	uint8_t *res = new uint8_t[image.rows * image.cols];
-
-// 	for(int i = 0; i < image.rows; i++)
-// 	{
-// 		for (int j = 0; j < image.cols; j++)
-// 		{
-// 			res_p[i*image.cols+j] = sqrt(pow(imh[i*image.cols+j],2)+pow(imv[i*image.cols+j],2))/sqrt(2);
-			
-// 		}
-// 	}
-
-// 	for(int i=0;i<image.rows;i++)
-// 	{
-// 		for (int j = 0; j < image.cols; j++)
-// 		{
-// 			res[i*image.cols+j] = uint8_t(res_p[i*image.cols+j]);
-// 		}
-// 	}
-
-// 	return res;
-// }
-
-void applyfilter(int fileid, int filterid, int kernel, bool valid)
+void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 {	
-	
-
-
 	vector<string> imgs;
 	ListDir("./", imgs);
 	ListDir("./", imgs);
@@ -517,32 +741,47 @@ void applyfilter(int fileid, int filterid, int kernel, bool valid)
 	//imshow("Tracker", image);
 	int n = image.rows;
 	int m = image.cols;
-	uint8_t* newimage;
+
+	ComplexFloat **dft = FFT2(image);
+	Mat fft_res(n, m, CV_32F, Scalar(0));
+	
+	Complex2Mat(dft,fft_res,n,false,255);
+
+	Mat newimage;
 	switch(filterid){
 		case 0:
-			newimage = applyideal_low(image, kernel, 0);
+			newimage = applyideal_low(fft_res, n, m, cutoff, 0);
 			break;
-		case 1:
-			newimage = applyideal_high(image, kernel, 1);
-			break;
-		case 2:
-			newimage = applygaus_low(image, kernel, 2);
-			break;
-		case 3:
-			newimage = applygaus_high(image, kernel, 3);
-			break;
-		case 4:
-			newimage = applybutter_low(image, kernel, 4);
-			break;
-		case 5:
-			newimage = applybutter_high(image, kernel, 5);
-			break;	
+		// case 1:
+		// 	newimage = applyideal_high(image, kernel, 1);
+		// 	break;
+		// case 2:
+		// 	newimage = applygaus_low(image, kernel, 2);
+		// 	break;
+		// case 3:
+		// 	newimage = applygaus_high(image, kernel, 3);
+		// 	break;
+		// case 4:
+		// 	newimage = applybutter_low(image, kernel, 4);
+		// 	break;
+		// case 5:
+		// 	newimage = applybutter_high(image, kernel, 5);
+		// 	break;	
 		default:
 			cout << "Invalid Filter" << endl;
 			return;
 	}
-	Mat res(n, m, CV_8UC1, Scalar(0));
-	res.data = newimage;
+
+
+	Mat res(n,m,CV_8UC1,Scalar(0));
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			res.at<uint8_t>(i,j) = uint8_t((newimage.at<float>(i,j))*255);
+		}
+	}
+	//res = newimage;
 
 	Mat result(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
 	Mat mat_im = result(Rect(0,0,image.cols,image.rows));
@@ -558,7 +797,7 @@ void myFunc(int value, void *ud)
 	userdata u = *static_cast<userdata*>(ud);
 
     //cout << *(u.file_id) << " " << *(u.filter_id) << " " << *(u.cutoff_size) << endl;
-    applyfilter(*u.file_id,*u.filter_id,*u.kernel_size,1);
+    applyfilter(*u.file_id,*u.filter_id,*u.cutoff_size,1);
 }
 
 
@@ -582,7 +821,7 @@ int main()
 	vector<string> filters = {"Ideal-LPF", "Ideal-HPF", "Gaussian-LPF", "Gaussian-HPF", "Buuterworth-LPF", "Buuterworth-HPF"};
 	createTrackbar("File-ID", "Tracker", u.file_id, imgs.size() - 1, myFunc, &u);
 	createTrackbar("Filter-ID", "Tracker", u.filter_id, filters.size() - 1, myFunc, &u);
-	createTrackbar("Kernel_size", "Tracker", u.cutoff_size, 10, myFunc, &u);
+	createTrackbar("Kernel_size", "Tracker", u.cutoff_size, 100, myFunc, &u);
 	Mat image = imread(imgs[id], IMREAD_GRAYSCALE);
 	Mat res_im( image.cols,image.rows, CV_8UC1, Scalar(255));
 	cv::putText(res_im, //target image
