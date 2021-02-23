@@ -62,87 +62,6 @@ int ListDir(const std::string& path, vector<string>& v) {
   return 0;
 }
 
-uint8_t* convolve(Mat image, double* h, int size, int type)
-{
-	uint8_t* pixel = (uint8_t*)image.data;
-	int n = image.rows;
-	int m = image.cols;
-
-	uint8_t* newimage = new uint8_t[n*m];
-	int s = size / 2;
-
-	int max_v = 0;
-	int min_v = 0;
-	for(int i = 0; i < n; i++)
-	{
-		for(int j = 0; j < m; j++)
-		{
-			float sum = 0;
-			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
-				continue;
-			for(int p = -s; p <= s; p++)
-			{
-				for(int r = -s; r<=s; r++)
-				{
-					int posim = (i + p) * m + (j + r);
-					int posh =  (p + s) * size + (r + s);
-					sum += h[posh] * (int)pixel[posim];
-				}
-			}
-
-
-			if(type != 7 && type!=8)
-			{
-				if(sum<0)
-				{
-					sum=0;
-				}
-				if(sum>255)
-				{
-					sum=255;
-				}
-				newimage[i*m + j] = (uint8_t)floor(sum);
-				if(type == 8)
-					newimage[i*m + j] = (uint8_t)(255 - (int)newimage[i*m + j]);
-			}
-			else
-			{
-				if(sum<0)
-					sum = -sum;
-				if(sum>255)
-					sum = 255;
-				newimage[i*m + j] = (uint8_t)floor(sum);
-				// cout << (int)newimage[i*m + j] << " ";
-			}
-		}
-	}
-
-	min_v = (min_v<0)?min_v:0;
-	max_v = (max_v>255)?max_v:255;
-
-	if(type==7)
-	{
-		for(int i = 0; i < n; i++)
-		{
-			for(int j = 0; j < m; j++)
-			{
-				newimage[i * m + j] = (uint8_t)floor(double(newimage[i * m + j]*255)/(max_v-min_v));
-			}
-		}
-	}
-	return newimage;
-}
-
-uint8_t* fft2()
-{
-
-}
-
-uint8_t* ifft2()
-{
-	
-}
-
 class ComplexFloat {
 public:
 	double real;
@@ -478,19 +397,16 @@ ComplexFloat **applyideal_low(ComplexFloat **fft_im, Mat dft, int n, int m, int 
 {
 	Mat image(n, m, CV_32F, Scalar(0));
 	Mat dft_shift = FFTShift(dft,n);
-	ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
+	//ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
 	uint8_t *fil = new uint8_t[n*m];
 	cutoff = cutoff*sqrt(n);
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			//float dist1 = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
-			float dist1 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(0)))*(j-(float(0))));
-			float dist2 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(m)))*(j-(float(m))));
-			float dist3 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(0)))*(j-(float(0))));
-			float dist4 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(m)))*(j-(float(m))));
-			if((dist1<=float(cutoff))||(dist2<=float(cutoff))||(dist3<=float(cutoff))||(dist4<=float(cutoff)))
+			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			if((dist<=float(cutoff)))
 			{
 				fil[i*n+j] = 0;
 				fft_im_shift[i][j] *= 1;
@@ -523,7 +439,7 @@ ComplexFloat **applyideal_low(ComplexFloat **fft_im, Mat dft, int n, int m, int 
 			}
 		}
 	}
-
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
 }
@@ -532,19 +448,16 @@ ComplexFloat **applyideal_high(ComplexFloat **fft_im, Mat dft, int n, int m, int
 {
 	Mat image(n, m, CV_32F, Scalar(0));
 	Mat dft_shift = FFTShift(dft,n);
-	ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
 	uint8_t *fil = new uint8_t[n*m];
 	cutoff = cutoff*sqrt(n);
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			//float dist1 = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
-			float dist1 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(0)))*(j-(float(0))));
-			float dist2 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(m)))*(j-(float(m))));
-			float dist3 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(0)))*(j-(float(0))));
-			float dist4 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(m)))*(j-(float(m))));
-			if((dist1<=float(cutoff))||(dist2<=float(cutoff))||(dist3<=float(cutoff))||(dist4<=float(cutoff)))
+			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			
+			if((dist<=float(cutoff)))
 			{
 				fil[i*n+j] = 0;
 				fft_im_shift[i][j] *= 0;
@@ -577,7 +490,7 @@ ComplexFloat **applyideal_high(ComplexFloat **fft_im, Mat dft, int n, int m, int
 			}
 		}
 	}
-
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
 }
@@ -771,18 +684,18 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 		case 1:
 			newimage = applyideal_high(dft, fft_res, n, m, cutoff, 1);
 			break;
-		// case 2:
-		// 	newimage = applygaus_low(image, kernel, 2);
-		// 	break;
-		// case 3:
-		// 	newimage = applygaus_high(image, kernel, 3);
-		// 	break;
-		// case 4:
-		// 	newimage = applybutter_low(image, kernel, 4);
-		// 	break;
-		// case 5:
-		// 	newimage = applybutter_high(image, kernel, 5);
-		// 	break;	
+		case 2:
+			newimage = applygaus_low(image, kernel, 2);
+			break;
+		case 3:
+			newimage = applygaus_high(image, kernel, 3);
+			break;
+		case 4:
+			newimage = applybutter_low(image, kernel, 4);
+			break;
+		case 5:
+			newimage = applybutter_high(image, kernel, 5);
+			break;	
 		default:
 			cout << "Invalid Filter" << endl;
 			return;
