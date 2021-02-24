@@ -1,10 +1,10 @@
 /*
-Task: Spatial Filtering
+Task: Frequency domain Filtering
 
 Things to do:
 
-1. Design spatial filters using C++
-2. Implement sliders to select the image, filter, neighborhood size
+1. Design frequency domain filters using C++
+2. Implement sliders to select the image, filter, cutoff size
 3. Apply the required algorithm according to outputs from the slider
 4. Display the input image and the output image.
 
@@ -14,7 +14,7 @@ Things to do:
 
 1. To select the image:
 2. To select the filter
-3. To select the kernel size
+3. To select the cutoff size
 
 so.. we can use a struct containing all these variables.
 */
@@ -190,11 +190,6 @@ Mat FFTShift(Mat matrix, int N)
 	return matrix;
 }
 
-//ASSUMPTIONS
-//WHEN CALLING THIS FUNCTION
-//arrSize = N
-//gap = 1
-//zeroLoc = 0
 
 ComplexFloat* FFT(uchar* x, int N, int arrSize, int zeroLoc, int gap)
 {
@@ -419,25 +414,7 @@ ComplexFloat **applyideal_low(ComplexFloat **fft_im, Mat dft, int n, int m, int 
 			}
 		}
 	}
-	float max_val = 0;
-	float min_val = 100000;
-	for(int i=0;i<n;i++)
-	{
-		for(int j=0;j<m;j++)
-		{
-			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
-			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
-			//cout<<image.at<float>(i,j)<<" ";
-			if(image.at<float>(i,j)>max_val)
-			{
-				max_val = image.at<float>(i,j);
-			}
-			if(image.at<float>(i,j)<min_val)
-			{
-				min_val = image.at<float>(i,j);
-			}
-		}
-	}
+	
 	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
@@ -470,25 +447,7 @@ ComplexFloat **applyideal_high(ComplexFloat **fft_im, Mat dft, int n, int m, int
 			}
 		}
 	}
-	float max_val = 0;
-	float min_val = 100000;
-	for(int i=0;i<n;i++)
-	{
-		for(int j=0;j<m;j++)
-		{
-			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
-			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
-			//cout<<image.at<float>(i,j)<<" ";
-			if(image.at<float>(i,j)>max_val)
-			{
-				max_val = image.at<float>(i,j);
-			}
-			if(image.at<float>(i,j)<min_val)
-			{
-				min_val = image.at<float>(i,j);
-			}
-		}
-	}
+	
 	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
@@ -532,7 +491,7 @@ ComplexFloat **applygaussian_high(ComplexFloat **fft_im, Mat dft, int n, int m, 
 		for(int j=0;j<m;j++)
 		{
 			dist = (i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2));
-			weight = 1 - exp(-(float(dist/(n)) / (2 * float(cutoff) * float(cutoff))));
+			weight = 1 - exp(-(dist/(2*float(cutoff)*float(cutoff))));    //(1/(sqrt(2*3.14)*float(cutoff)))
 			fft_im_shift[i][j] *= weight;
 			fil[i*n + j] = weight;
 			
@@ -564,25 +523,7 @@ ComplexFloat **applybutter_low(ComplexFloat **fft_im, Mat dft, int n, int m, int
 			
 		}
 	}
-	float max_val = 0;
-	float min_val = 100000;
-	for(int i=0;i<n;i++)
-	{
-		for(int j=0;j<m;j++)
-		{
-			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
-			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
-			//cout<<image.at<float>(i,j)<<" ";
-			if(image.at<float>(i,j)>max_val)
-			{
-				max_val = image.at<float>(i,j);
-			}
-			if(image.at<float>(i,j)<min_val)
-			{
-				min_val = image.at<float>(i,j);
-			}
-		}
-	}
+	
 	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
@@ -607,25 +548,7 @@ ComplexFloat **applybutter_high(ComplexFloat **fft_im, Mat dft, int n, int m, in
 			
 		}
 	}
-	float max_val = 0;
-	float min_val = 100000;
-	for(int i=0;i<n;i++)
-	{
-		for(int j=0;j<m;j++)
-		{
-			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
-			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
-			//cout<<image.at<float>(i,j)<<" ";
-			if(image.at<float>(i,j)>max_val)
-			{
-				max_val = image.at<float>(i,j);
-			}
-			if(image.at<float>(i,j)<min_val)
-			{
-				min_val = image.at<float>(i,j);
-			}
-		}
-	}
+	
 	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
@@ -703,11 +626,28 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 
 	Mat filtered_fft(n,m,CV_8UC1,Scalar(0));
 	ComplexFloat **shift_new = FFTShift(newimage,n);
+
+	float min_val = 1000000,max_val=0,sum_val=0;
+	for (int i = 0; i < n; i++) 
+	{
+		for (int j = 0; j < m; j++) 
+		{
+			float m = shift_new[i][j].magnitude();
+			if (m < min_val) {
+				min_val = m;
+			}
+			if (m > max_val) {
+				max_val = m;
+			}
+			sum_val += m;
+		}
+	}
+	//cout<<max_val<<" "<<min_val<<"\n";
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			filtered_fft.at<uint8_t>(i,j) = uint8_t(((shift_new[i][j]).magnitude())*255);
+			filtered_fft.at<uint8_t>(i,j) = uint8_t(((shift_new[i][j]).magnitude())*float(255)/(n));
 		}
 	}
 	
@@ -769,12 +709,12 @@ int main()
 	createTrackbar("Kernel_size", "Tracker", u.cutoff_size, 50, myFunc, &u);
 	Mat image = imread(imgs[id], IMREAD_GRAYSCALE);
 	Mat res_im( image.cols,image.rows, CV_8UC1, Scalar(255));
-	cv::putText(res_im, //target image
-        "Move the track bars for output!", //text
-        cv::Point(10, 600 / 2), //top-left position
+	cv::putText(res_im, 
+        "Move the track bars for output!", 
+        cv::Point(10, 600 / 2), 
         cv::FONT_HERSHEY_DUPLEX,
         0.75,
-        CV_RGB(0, 0, 0), //font color
+        CV_RGB(0, 0, 0),
         2);
 	
 	Mat res(Size(image.cols*3,image.rows),CV_8UC1,Scalar::all(0));
