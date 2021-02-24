@@ -89,7 +89,36 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 					sum += h[posh] * (int)pixel[posim];
 				}
 			}
+<<<<<<< HEAD
 			if(type != 7)
+=======
+
+/*********** Linear Scaled ***************/
+
+			// if(sum>max_v)
+			// {
+			// 	max_v=sum;
+			// }
+			// if(sum<min_v)
+			// {
+			// 	min_v=sum;
+			// }
+			// newimage[i * m + j] = (uint8_t)floor(sum);
+			// if(sum<0)
+			// {
+			// 	sum=0;
+			// }
+			// if(sum>255)
+			// {
+			// 	sum=255;
+			// }
+			// if((type!=7))//&&(type!=8))
+			// 	newimage[i * m + j] = (uint8_t)floor(sum);
+
+/************ Thresholded **************/
+
+			if(type != 7 && type!=8)
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 			{
 				if(sum<0)
 				{
@@ -100,8 +129,13 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 					sum=255;
 				}
 				newimage[i*m + j] = (uint8_t)floor(sum);
+<<<<<<< HEAD
 				// if(type == 8)
 				// 	newimage[i*m + j] = (uint8_t)(255 - (int)newimage[i*m + j]);
+=======
+				if(type == 8)
+					newimage[i*m + j] = (uint8_t)(255 - (int)newimage[i*m + j]);
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 			}
 			else
 			{
@@ -112,6 +146,7 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 				newimage[i*m + j] = (uint8_t)floor(sum);
 				// cout << (int)newimage[i*m + j] << " ";
 			}
+<<<<<<< HEAD
 			// else
 			// if(sum>max_v)
 			// {
@@ -132,6 +167,8 @@ uint8_t* convolve(Mat image, double* h, int size, int type)
 			// }
 			// if(type!=7)
 			// 	newimage[i * m + j] = (uint8_t)floor(sum);
+=======
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 		}
 	}
 
@@ -212,8 +249,12 @@ uint8_t* applygaussian(Mat image, int size, int type)
 	double* h = new double[size * size];
 	int mid = (size)/2;
 	double normal = 0;
+<<<<<<< HEAD
 	// int sigma = ceil(float(size)/6);
 	int sigma = 1;
+=======
+	double sigma = (double(size)/6);
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 	for(int i=0;i<size;i++)
 	{
 		for(int j=0;j<size;j++)
@@ -239,6 +280,12 @@ uint8_t* applylaplacian(Mat image, int size, int type)
 {
 	double* h = new double[size * size];
 	int mid = floor((size)/2);
+<<<<<<< HEAD
+=======
+
+/************** Weighted Laplacian according to distance from center **************/
+
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 	// double sum = 0;
 	// for(int i=0;i<size;i++)
 	// {
@@ -257,12 +304,22 @@ uint8_t* applylaplacian(Mat image, int size, int type)
 		
 	// }
 	// h[mid*size + mid] = -sum;
+<<<<<<< HEAD
+=======
+
+/************** Normal Laplacian ***********************/
+
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 	for(int i=0;i<size;i++)
 	{
 		for(int j=0;j<size;j++)
 			h[i*size + j] = 1;
 	}	
 	h[mid * size + mid] = -(pow(size,2) - 1);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 	return convolve(image, h, size, type);
 }
 
@@ -270,6 +327,7 @@ uint8_t* applylaplacian(Mat image, int size, int type)
 
 uint8_t* applyLoG(Mat image, int size, int type)
 {
+<<<<<<< HEAD
 	uint8_t* pixel = applygaussian(image, size, 1);
 	int n = image.rows;
 	int m = image.cols;
@@ -278,6 +336,24 @@ uint8_t* applyLoG(Mat image, int size, int type)
 	return applylaplacian(res, size, 8);
 
 	// double* h = new double[size * size];
+=======
+
+/**************** Operator cascading Output ****************/
+
+	// uint8_t* pixel = applygaussian(image, size, 1);
+	// int n = image.rows;
+	// int m = image.cols;
+	// Mat res(n, m, CV_8UC1, Scalar(0));
+	// res.data = pixel;
+	// return applylaplacian(res, size, 7);
+
+
+/**************** Hard coded Kernels for LoG *****************/
+
+
+	// double* h = new double[size * size];
+
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 	// if(size == 3)
 	// {
 	// 	h[0] = -1; h[1] = -1; h[2] = -1;
@@ -286,11 +362,19 @@ uint8_t* applyLoG(Mat image, int size, int type)
 	// }
 	// else if(size == 5)
 	// {
+<<<<<<< HEAD
 	// 	h[0] = 0; h[1] = 0; h[2] = 1; h[3] = 0; h[4] =  0;
 	// 	h[5] = 0; h[6] = 1; h[7] = 2; h[8] = 1; h[9] =  0;
 	// 	h[10] = 1; h[11] = 2; h[12] = -16; h[13] = 2; h[14] =  1;
 	// 	h[15] = 0; h[16] = 1; h[17] = 2; h[18] = 1; h[19] =  0;
 	// 	h[20] = 0; h[21] = 0; h[22] = 1; h[23] = 0; h[24] =  0;
+=======
+	// 	h[0] = -1; h[1] = 3; h[2] = -4; h[3] = -3; h[4] =  -1;
+	// 	h[5] = -3; h[6] = 0; h[7] = 6; h[8] = 0; h[9] =  -3;
+	// 	h[10] = -4; h[11] = 6; h[12] = 20; h[13] = 6; h[14] =  -4;
+	// 	h[15] = -3; h[16] = 0; h[17] = 6; h[18] = 0; h[19] =  -3;
+	// 	h[20] = -1; h[21] = 3; h[22] = -4; h[23] = -3; h[24] =  -1;
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 	// }
 	// else if(size == 7)
 	// {
@@ -315,6 +399,7 @@ uint8_t* applyLoG(Mat image, int size, int type)
 	// 	h[63] = 1; h[64] = 2; h[65] = 4; h[66] = 5; h[67] = 5; h[68] = 5; h[69] = 4; h[70] = 2; h[71] = 1;
 	// 	h[72] = 0; h[73] = 1; h[74] = 1; h[75] = 2; h[76] = 2; h[77] = 2; h[78] = 1; h[79] = 1; h[80] = 0;
 	// }
+<<<<<<< HEAD
 	// float sigma = 1.0;
 	// for(int i=0;i<size;i++)
 	// {
@@ -343,6 +428,39 @@ uint8_t* applyLoG(Mat image, int size, int type)
 
  //    }
 	// return convolve(image, h, size, 8);	
+=======
+
+/***************** Generalised Kernel *******************/
+
+	double* v = new double[size * size];
+	double sigma = (double(size)/6);
+
+	int kernelSize = size;
+	for(int i = -(kernelSize/2); i<=(kernelSize/2); i++)
+    {
+
+        for(int j = -(kernelSize/2); j<=(kernelSize/2); j++)
+        {
+
+            double L_xy = -(1/(PI * pow(sigma,4)))*(1 - ((pow(i,2) + pow(j,2))/(2*pow(sigma,2))))*exp(-((pow(i,2) + pow(j,2))/(2*pow(sigma,2))));
+            //L_xy*=426.3;
+            v[(i + kernelSize/2)*size  + (j + kernelSize/2)] = L_xy;
+        }
+
+    }
+	float sum = 0;
+	for(int i=0;i<size;i++)
+	{
+		for(int j=0;j<size;j++)
+		{
+			sum += (float)v[i*size + j];
+			//cout << (float)v[i*size + j] << " ";
+		}
+		//cout << endl;
+	}
+	
+	return convolve(image, v, size, type);	
+>>>>>>> 5a25b4c868ebab8f7fc693931c89fdb6449789bb
 }
 
 uint8_t* applyprewitt(Mat image, int size, int type)
@@ -588,12 +706,12 @@ int main()
 	createTrackbar("Kernel_size", "Tracker", u.kernel_size, 10, myFunc, &u);
 	Mat image = imread(imgs[id], IMREAD_GRAYSCALE);
 	Mat res_im( image.cols,image.rows, CV_8UC1, Scalar(255));
-	cv::putText(image, //target image
+	cv::putText(res_im, //target image
         "Move the track bars for output!", //text
         cv::Point(10, 600 / 2), //top-left position
         cv::FONT_HERSHEY_DUPLEX,
-        1.0,
-        CV_RGB(255, 255, 255), //font color
+        0.75,
+        CV_RGB(0, 0, 0), //font color
         2);
 	
 	Mat res(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
