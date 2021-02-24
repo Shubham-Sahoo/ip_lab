@@ -62,87 +62,6 @@ int ListDir(const std::string& path, vector<string>& v) {
   return 0;
 }
 
-uint8_t* convolve(Mat image, double* h, int size, int type)
-{
-	uint8_t* pixel = (uint8_t*)image.data;
-	int n = image.rows;
-	int m = image.cols;
-
-	uint8_t* newimage = new uint8_t[n*m];
-	int s = size / 2;
-
-	int max_v = 0;
-	int min_v = 0;
-	for(int i = 0; i < n; i++)
-	{
-		for(int j = 0; j < m; j++)
-		{
-			float sum = 0;
-			if(i - s < 0 or i + s >= n or j - s < 0 or j + s >= m)
-				continue;
-			for(int p = -s; p <= s; p++)
-			{
-				for(int r = -s; r<=s; r++)
-				{
-					int posim = (i + p) * m + (j + r);
-					int posh =  (p + s) * size + (r + s);
-					sum += h[posh] * (int)pixel[posim];
-				}
-			}
-
-
-			if(type != 7 && type!=8)
-			{
-				if(sum<0)
-				{
-					sum=0;
-				}
-				if(sum>255)
-				{
-					sum=255;
-				}
-				newimage[i*m + j] = (uint8_t)floor(sum);
-				if(type == 8)
-					newimage[i*m + j] = (uint8_t)(255 - (int)newimage[i*m + j]);
-			}
-			else
-			{
-				if(sum<0)
-					sum = -sum;
-				if(sum>255)
-					sum = 255;
-				newimage[i*m + j] = (uint8_t)floor(sum);
-				// cout << (int)newimage[i*m + j] << " ";
-			}
-		}
-	}
-
-	min_v = (min_v<0)?min_v:0;
-	max_v = (max_v>255)?max_v:255;
-
-	if(type==7)
-	{
-		for(int i = 0; i < n; i++)
-		{
-			for(int j = 0; j < m; j++)
-			{
-				newimage[i * m + j] = (uint8_t)floor(double(newimage[i * m + j]*255)/(max_v-min_v));
-			}
-		}
-	}
-	return newimage;
-}
-
-uint8_t* fft2()
-{
-
-}
-
-uint8_t* ifft2()
-{
-	
-}
-
 class ComplexFloat {
 public:
 	double real;
@@ -478,19 +397,16 @@ ComplexFloat **applyideal_low(ComplexFloat **fft_im, Mat dft, int n, int m, int 
 {
 	Mat image(n, m, CV_32F, Scalar(0));
 	Mat dft_shift = FFTShift(dft,n);
-	ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
+	//ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
 	uint8_t *fil = new uint8_t[n*m];
 	cutoff = cutoff*sqrt(n);
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			//float dist1 = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
-			float dist1 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(0)))*(j-(float(0))));
-			float dist2 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(m)))*(j-(float(m))));
-			float dist3 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(0)))*(j-(float(0))));
-			float dist4 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(m)))*(j-(float(m))));
-			if((dist1<=float(cutoff))||(dist2<=float(cutoff))||(dist3<=float(cutoff))||(dist4<=float(cutoff)))
+			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			if((dist<=float(cutoff)))
 			{
 				fil[i*n+j] = 1;
 				fft_im_shift[i][j] *= 1;
@@ -500,7 +416,6 @@ ComplexFloat **applyideal_low(ComplexFloat **fft_im, Mat dft, int n, int m, int 
 			{
 				fil[i*n+j] *= 0;
 				fft_im_shift[i][j] *= 0;
-				// cout<<fft_im_shift[]
 			}
 		}
 	}
@@ -523,7 +438,7 @@ ComplexFloat **applyideal_low(ComplexFloat **fft_im, Mat dft, int n, int m, int 
 			}
 		}
 	}
-
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
 }
@@ -532,19 +447,16 @@ ComplexFloat **applyideal_high(ComplexFloat **fft_im, Mat dft, int n, int m, int
 {
 	Mat image(n, m, CV_32F, Scalar(0));
 	Mat dft_shift = FFTShift(dft,n);
-	ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
 	uint8_t *fil = new uint8_t[n*m];
 	cutoff = cutoff*sqrt(n);
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			//float dist1 = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
-			float dist1 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(0)))*(j-(float(0))));
-			float dist2 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(m)))*(j-(float(m))));
-			float dist3 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(0)))*(j-(float(0))));
-			float dist4 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(m)))*(j-(float(m))));
-			if((dist1<=float(cutoff))||(dist2<=float(cutoff))||(dist3<=float(cutoff))||(dist4<=float(cutoff)))
+			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			
+			if((dist<float(cutoff)))
 			{
 				fil[i*n+j] = 0;
 				fft_im_shift[i][j] *= 0;
@@ -552,7 +464,7 @@ ComplexFloat **applyideal_high(ComplexFloat **fft_im, Mat dft, int n, int m, int
 			}
 			else
 			{
-				fil[i*n+j] *= 1;
+				fil[i*n+j] = 1;
 				fft_im_shift[i][j] *= 1;
 				// cout<<fft_im_shift[]
 			}
@@ -577,7 +489,7 @@ ComplexFloat **applyideal_high(ComplexFloat **fft_im, Mat dft, int n, int m, int
 			}
 		}
 	}
-
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
 }
@@ -586,30 +498,18 @@ ComplexFloat **applygaussian_low(ComplexFloat **fft_im, Mat dft, int n, int m, i
 {
 	Mat image(n, m, CV_32F, Scalar(0));
 	Mat dft_shift = FFTShift(dft,n);
-	ComplexFloat **fft_im_shift = fft_im;//FFTShift<ComplexFloat>(fft_im,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
 	uint8_t *fil = new uint8_t[n*m];
 	cutoff = cutoff*sqrt(n);
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
 		{
-			//float dist1 = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
-			float dist1 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(0)))*(j-(float(0))));
-			float dist2 = sqrt((i-(float(0)))*(i-(float(0))) + (j-(float(m)))*(j-(float(m))));
-			float dist3 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(0)))*(j-(float(0))));
-			float dist4 = sqrt((i-(float(n)))*(i-(float(n))) + (j-(float(m)))*(j-(float(m))));
-			if((dist1<=float(cutoff))||(dist2<=float(cutoff))||(dist3<=float(cutoff))||(dist4<=float(cutoff)))
-			{
-				fil[i*n+j] = 0;
-				fft_im_shift[i][j] *= 1;
-				//cout<<i<<" "<<j<<"\n";
-			}
-			else
-			{
-				fil[i*n+j] *= 0;
-				fft_im_shift[i][j] *= 0;
-				// cout<<fft_im_shift[]
-			}
+			float dist = (i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2));
+			float weight = exp(- (dist / (2 * cutoff * cutoff)));
+			fft_im_shift[i][j] *= weight;
+			fil[i*n + j] = weight;
+			
 		}
 	}
 	float max_val = 0;
@@ -631,107 +531,139 @@ ComplexFloat **applygaussian_low(ComplexFloat **fft_im, Mat dft, int n, int m, i
 			}
 		}
 	}
-
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
 	return fft_im_shift;
 
 }
 
-
-
-// uint8_t* applybutter_low(Mat image, int size, int type)
-// {
-
-
-// 	double* v = new double[size * size];
-// 	double sigma = (double(size)/6);
-
-// 	int kernelSize = size;
-// 	for(int i = -(kernelSize/2); i<=(kernelSize/2); i++)
-//     {
-
-//         for(int j = -(kernelSize/2); j<=(kernelSize/2); j++)
-//         {
-
-//             double L_xy = -(1/(PI * pow(sigma,4)))*(1 - ((pow(i,2) + pow(j,2))/(2*pow(sigma,2))))*exp(-((pow(i,2) + pow(j,2))/(2*pow(sigma,2))));
-//             //L_xy*=426.3;
-//             v[(i + kernelSize/2)*size  + (j + kernelSize/2)] = L_xy;
-//         }
-
-//     }
-// 	float sum = 0;
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 		{
-// 			sum += (float)v[i*size + j];
-// 			//cout << (float)v[i*size + j] << " ";
-// 		}
-// 		//cout << endl;
-// 	}
-	
-// 	return convolve(image, v, size, type);	
-// }
-
-// uint8_t* applybutter_high(Mat image, int size, int type)
-// {
-// 	double* h = new double[size * size];
-// 	double* v = new double[size * size];
-
-// 	for(int i=0;i<size;i++)
-// 	{
-// 		for(int j=0;j<size;j++)
-// 		{
-// 			if(j==0)
-// 			{
-// 				h[i*size+j] = 1;
-// 			}
-// 			if(i==0)
-// 			{
-// 				v[i*size+j] = 1;
-// 			}
-// 			if(j==size-1)
-// 			{
-// 				h[i*size+j] = -1;
-// 			}
-// 			if(i==size-1)
-// 			{
-// 				v[i*size+j] = -1;
-// 			}
-// 			if(i!=0 && j!=0 && i!=size-1 && j!=size-1)
-// 			{
-// 				h[i*size+j] = 0;
-// 				v[i*size+j] = 0;
-// 			}
-
-// 		}	
-// 	}
-
-
-// 	uint8_t *imh = convolve(image, h, size, type);
-// 	uint8_t *imv = convolve(image, v, size, type);
-// 	double *res_p = new double[image.rows * image.cols];
-// 	uint8_t *res = new uint8_t[image.rows * image.cols];
-
-// 	for(int i = 0; i < image.rows; i++)
-// 	{
-// 		for (int j = 0; j < image.cols; j++)
-// 		{
-// 			res_p[i*image.cols+j] = sqrt(pow(imh[i*image.cols+j],2)+pow(imv[i*image.cols+j],2))/sqrt(2);
+ComplexFloat **applybutter_low(ComplexFloat **fft_im, Mat dft, int n, int m, int cutoff, int type)
+{
+	Mat image(n, m, CV_32F, Scalar(0));
+	Mat dft_shift = FFTShift(dft,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
+	uint8_t *fil = new uint8_t[n*m];
+	cutoff = cutoff*sqrt(n);
+	int order = 5;
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			float weight = 1/(1 + pow((dist/cutoff), 2 * order));
+			fft_im_shift[i][j] *= weight;
+			fil[i*n + j] = weight;
 			
-// 		}
-// 	}
+		}
+	}
+	float max_val = 0;
+	float min_val = 100000;
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
+			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
+			//cout<<image.at<float>(i,j)<<" ";
+			if(image.at<float>(i,j)>max_val)
+			{
+				max_val = image.at<float>(i,j);
+			}
+			if(image.at<float>(i,j)<min_val)
+			{
+				min_val = image.at<float>(i,j);
+			}
+		}
+	}
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
+	return fft_im_shift;
 
-// 	for(int i=0;i<image.rows;i++)
-// 	{
-// 		for (int j = 0; j < image.cols; j++)
-// 		{
-// 			res[i*image.cols+j] = uint8_t(res_p[i*image.cols+j]);
-// 		}
-// 	}
+}
 
-// 	return res;
-// }
+ComplexFloat **applybutter_high(ComplexFloat **fft_im, Mat dft, int n, int m, int cutoff, int type)
+{
+	Mat image(n, m, CV_32F, Scalar(0));
+	Mat dft_shift = FFTShift(dft,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
+	uint8_t *fil = new uint8_t[n*m];
+	cutoff = cutoff*sqrt(n);
+	int order = 5;
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			float dist = sqrt((i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2)));
+			float weight = 1/(1 + pow((cutoff/dist), 2 * order));
+			fft_im_shift[i][j] *= weight;
+			fil[i*n + j] = weight;
+			
+		}
+	}
+	float max_val = 0;
+	float min_val = 100000;
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
+			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
+			//cout<<image.at<float>(i,j)<<" ";
+			if(image.at<float>(i,j)>max_val)
+			{
+				max_val = image.at<float>(i,j);
+			}
+			if(image.at<float>(i,j)<min_val)
+			{
+				min_val = image.at<float>(i,j);
+			}
+		}
+	}
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
+	return fft_im_shift;
 
+}
+
+ComplexFloat **applygaussian_high(ComplexFloat **fft_im, Mat dft, int n, int m, int cutoff, int type)
+{
+	Mat image(n, m, CV_32F, Scalar(0));
+	Mat dft_shift = FFTShift(dft,n);
+	ComplexFloat **fft_im_shift = FFTShift<ComplexFloat>(fft_im,n);
+	uint8_t *fil = new uint8_t[n*m];
+	cutoff = cutoff*sqrt(n);
+	// cout << cutoff << " ";
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			float dist = (i-(float(n)/2))*(i-(float(n)/2)) + (j-(float(m)/2))*(j-(float(m)/2));
+			float weight = 1 - exp(- (dist / (2 * cutoff * cutoff)));
+			fft_im_shift[i][j] *= weight;
+			fil[i*n + j] = weight;
+			
+		}
+	}
+	float max_val = 0;
+	float min_val = 100000;
+	for(int i=0;i<n;i++)
+	{
+		for(int j=0;j<m;j++)
+		{
+			image.at<float>(i,j) = dft_shift.at<float>(i,j)*float(fil[i*n+j]);
+			//image.at<float>(i,j) = (fft_im_shift[i][j])*float(fil[i*n+j]);
+			//cout<<image.at<float>(i,j)<<" ";
+			if(image.at<float>(i,j)>max_val)
+			{
+				max_val = image.at<float>(i,j);
+			}
+			if(image.at<float>(i,j)<min_val)
+			{
+				min_val = image.at<float>(i,j);
+			}
+		}
+	}
+	fft_im_shift = FFTShift<ComplexFloat>(fft_im_shift,n);
+	return fft_im_shift;
+
+}
 
 void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 {	
@@ -740,7 +672,7 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 	ListDir("./", imgs);
 
 	vector<string> filters = {"Ideal-LPF", "Ideal-HPF", "Gaussian-LPF", "Gaussian-HPF", "Buuterworth-LPF", "Buuterworth-HPF"};
-
+	cout << cutoff << " ";
 	Mat image = imread(imgs[fileid], IMREAD_GRAYSCALE);
 
 	if(valid==0)
@@ -763,7 +695,7 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 		return;
 	}
 
-	//imshow("Tracker", image);
+	// cout << cutoff << " ";
 	int n = image.rows;
 	int m = image.cols;
 
@@ -786,19 +718,15 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 		case 2:
 			newimage = applygaussian_low(dft, fft_res, n, m, cutoff, 2);
 			break;
-
-		// case 2:
-		// 	newimage = applygaus_low(image, kernel, 2);
-		// 	break;
-		// case 3:
-		// 	newimage = applygaus_high(image, kernel, 3);
-		// 	break;
-		// case 4:
-		// 	newimage = applybutter_low(image, kernel, 4);
-		// 	break;
-		// case 5:
-		// 	newimage = applybutter_high(image, kernel, 5);
-		// 	break;	
+		case 3:
+			newimage = applygaussian_high(dft, fft_res, n, m, cutoff, 3);
+			break;
+		case 4:
+			newimage = applybutter_low(dft, fft_res, n, m, cutoff, 4);
+			break;
+		case 5:
+			newimage = applybutter_high(dft, fft_res, n, m, cutoff, 5);
+			break;	
 		default:
 			cout << "Invalid Filter" << endl;
 			return;
@@ -846,8 +774,6 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 void myFunc(int value, void *ud)
 {
 	userdata u = *static_cast<userdata*>(ud);
-
-    //cout << *(u.file_id) << " " << *(u.filter_id) << " " << *(u.cutoff_size) << endl;
     applyfilter(*u.file_id,*u.filter_id,*u.cutoff_size,1);
 }
 
