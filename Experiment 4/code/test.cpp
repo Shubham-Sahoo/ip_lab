@@ -32,6 +32,7 @@ typedef struct {
  int* file_id;
  int* filter_id;
  int* cutoff_size;
+ int* type;
 }userdata;
 
 bool endsWith(std::string str, std::string suffix)
@@ -566,26 +567,6 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 	//cout << cutoff << " ";
 	Mat image = imread(imgs[fileid], IMREAD_GRAYSCALE);
 
-	if(valid==0)
-	{	
-		
-		Mat res(image.rows, image.cols, CV_8UC1, Scalar(0));
-		cv::putText(res, //target image
-            "Invalid kernel size!", //text
-            cv::Point(10, image.cols / 2), //top-left position
-            cv::FONT_HERSHEY_DUPLEX,
-            1.0,
-            CV_RGB(255, 255, 255), //font color
-            2);
-		Mat result(Size(image.cols*2,image.rows),CV_8UC1,Scalar::all(0));
-		Mat mat_im = result(Rect(0,0,image.cols,image.rows));
-		image.copyTo(mat_im);
-		mat_im = result(Rect(image.cols,0,image.cols,image.rows));
-		res.copyTo(mat_im);
-		imshow("Tracker", result);
-		return;
-	}
-
 	// cout << cutoff << " ";
 	int n = image.rows;
 	int m = image.cols;
@@ -643,6 +624,7 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 		}
 	}
 	//cout<<max_val<<" "<<min_val<<"\n";
+
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<m;j++)
@@ -651,6 +633,17 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 		}
 	}
 	
+	if(valid==0)
+	{
+		for(int i=0;i<n;i++)
+		{
+			for(int j=0;j<m;j++)
+			{
+				filtered_fft.at<uint8_t>(i,j) = uint8_t(((shift_new[i][j]).magnitude())*float(255)/(1));
+			}
+		}
+	}
+
 
 	ComplexFloat **result_ifft;
 	result_ifft = IFFT2(newimage,n);
@@ -682,7 +675,8 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 void myFunc(int value, void *ud)
 {
 	userdata u = *static_cast<userdata*>(ud);
-    applyfilter(*u.file_id,*u.filter_id,*u.cutoff_size,1);
+	//cout<<*(u.type)<<" "<<flush;
+    applyfilter(*u.file_id,*u.filter_id,*u.cutoff_size,*(u.type));
 }
 
 
@@ -692,13 +686,16 @@ int main()
 	int fname = 0;
 	int filter_id = 0;
 	int ksize = 0;
+	int type_val = 0;
 	userdata u;
 	u.file_id = &fname;
 	u.filter_id = &filter_id;
 	u.cutoff_size = &ksize;
+	u.type = &type_val;
 	int id;
-	cout << "Enter any ID" << endl;
-	cin >> id;
+	int type;
+	cout << "Enter type (separation{0} or variation{1}) :" << endl;
+	cin >> type;
 	namedWindow("Tracker", 1);
 	vector<string> imgs;
 	ListDir("./", imgs);
@@ -706,8 +703,10 @@ int main()
 	vector<string> filters = {"Ideal-LPF", "Ideal-HPF", "Gaussian-LPF", "Gaussian-HPF", "Buuterworth-LPF", "Buuterworth-HPF"};
 	createTrackbar("File-ID", "Tracker", u.file_id, imgs.size() - 1, myFunc, &u);
 	createTrackbar("Filter-ID", "Tracker", u.filter_id, filters.size() - 1, myFunc, &u);
-	createTrackbar("Kernel_size", "Tracker", u.cutoff_size, 50, myFunc, &u);
-	Mat image = imread(imgs[id], IMREAD_GRAYSCALE);
+	createTrackbar("Cutoff_size", "Tracker", u.cutoff_size, 20, myFunc, &u);
+	createTrackbar("Type", "Tracker", u.type, 1, myFunc, &u);
+
+	Mat image = imread(imgs[0], IMREAD_GRAYSCALE);
 	Mat res_im( image.cols,image.rows, CV_8UC1, Scalar(255));
 	cv::putText(res_im, 
         "Move the track bars for output!", 
