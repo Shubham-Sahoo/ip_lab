@@ -668,6 +668,8 @@ void applyfilter(int fileid, int filterid, int cutoff, bool valid)
 	filtered_fft.copyTo(mat_im);
 	mat_im = result(Rect(2*image.cols,0,image.cols,image.rows));
 	res.copyTo(mat_im);
+
+	cv::resize(result,result, cv::Size(), 0.75, 0.75);
 	imshow("Tracker", result);
 
 }
@@ -723,6 +725,9 @@ int main()
 	res_im.copyTo(mat_im);
 	mat_im = res(Rect(2*image.cols,0,image.cols,image.rows));
 	res_im.copyTo(mat_im);
+
+	cv::resize(res,res, cv::Size(), 0.75, 0.75);
+
 	imshow("Tracker", res);
 	waitKey();
 
