@@ -53,67 +53,125 @@ int ListDir(const std::string& path, vector<string>& v) {
 }
 
 
-void erosion(uint8_t *imarray, Mat st)
+Mat erosion(Mat image, Mat st)
 {
-	uint8_t ***rdata;
 
-	rdata = new uint8_t**[height];
-	for(int i=0;i<height;i++)
-	{
-		rdata[i] = new uint8_t*[width];
-		for(int j=0;j<width;j++)
-		{
-			rdata[i][j] = new uint8_t[colors];
-		}
-	}
-	for(int i=0;i<height;i++)
-	{
-		for(int j=0;j<width;j++)
-		{
-			for(int k=0;k<colors;k++)
-				rdata[i][j][k] = 255;
-		}
-	}
+	int n = image.rows;
+	int m = image.cols;
 
-	rdata = convert1Dto3D(imarray,width, height, colors, rdata);
-	
-	int ox = height/2, oy = width/2;
+	Mat res(n,m,CV_8UC1,Scalar(0));
 
-	uint8_t ***newdata;
-	newdata = new uint8_t**[height];
-	for(int i=0;i<height;i++)
+	int st_r = (st.rows)/2;
+	int st_c = (st.cols)/2;
+	int en_r = (st.rows)/2;
+	int en_c = (st.cols)/2;
+	if(st.rows == 1)
 	{
-		newdata[i] = new uint8_t*[width];
-		for(int j=0;j<width;j++)
-		{
-			newdata[i][j] = new uint8_t[colors];
-		}
+		st_r = 0;	
 	}
 	
-	for(int i=0;i<height;i++)
-	{
-		for(int j=0;j<width;j++)
-		{
-			for(int k=0;k<colors;k++)
-				newdata[i][j][k] = 255;
-		}
-	}
-			
-	
-	uint8_t *res;
-	res = new uint8_t[n*(m*colors)];
 
-	for(int i=0;i<n;i++)
+	for(int i=st_r;i<n-en_r;i++)
 	{
-		for(int j=0;j<m;j++)
-		{	
-			for(int k=0;k<colors;k++)
+		for(int j=st_c;j<m-en_c;j++)
+		{
+			int flag = 0;
+			for(int k=0;k<st.rows;k++)
 			{
-				res[i*m*colors + j*colors +k] = newdata[i][j][k];
+				for(int l=0;l<st.cols;l++)
+				{	
+					int ref_i = i-st_r+k;
+					int ref_j = j-st_c+l;
+					if(image.at<uint8_t>(ref_i,ref_j) == 0 && st.at<uint8_t>(k,l)==1)
+					{
+						flag = 1;
+						break;
+					}
+					if(image.at<uint8_t>(ref_i,ref_j) == 255 && st.at<uint8_t>(k,l)==0)
+					{
+						flag = 1;
+						break;
+					}
+				}
+				if(flag==1)
+				{
+					break;
+				}
+			}
+			if(flag==0)
+			{
+				res.at<uint8_t>(i,j) = 255;
 			}
 		}
 	}
+	return res;
+}
 
+Mat dilation(Mat image, Mat st)
+{
+
+	int n = image.rows;
+	int m = image.cols;
+
+	Mat res(n,m,CV_8UC1,Scalar(0));
+
+	int st_r = (st.rows)/2;
+	int st_c = (st.cols)/2;
+	int en_r = (st.rows)/2;
+	int en_c = (st.cols)/2;
+	if(st.rows == 1)
+	{
+		st_r = 0;	
+	}
+	
+
+	for(int i=st_r;i<n-en_r;i++)
+	{
+		for(int j=st_c;j<m-en_c;j++)
+		{
+			for(int k=0;k<st.rows;k++)
+			{
+				for(int l=0;l<st.cols;l++)
+				{	
+					int ref_i = i-st_r+k;
+					int ref_j = j-st_c+l;
+					if(st.at<uint8_t>(k,l)==1 && image.at<uint8_t>(i,j)==255)
+					{
+						res.at<uint8_t>(ref_i,ref_j) = 255;
+					}
+					
+				}
+				
+			}
+		}
+	}
+	return res;
+}
+
+Mat opening(Mat image, Mat st)
+{	
+	int n = image.rows;
+	int m = image.cols;
+
+	Mat res_er(n,m,CV_8UC1,Scalar(0));
+	res_er = erosion(image,st);
+	Mat res(n,m,CV_8UC1,Scalar(0));
+	res = dilation(res_er,st);
+	
+	return res;
+}
+
+Mat closing(Mat image, Mat st)
+{
+	int n = image.rows;
+	int m = image.cols;
+
+	Mat res_dl(n,m,CV_8UC1,Scalar(0));
+	res_dl = dilation(image,st);
+	Mat res(n,m,CV_8UC1,Scalar(0));
+	res = erosion(res_dl,st);
+	
+	return res;
 }
 
 void applyfilter(int fileid, int st_id, int type)
@@ -150,7 +208,7 @@ void applyfilter(int fileid, int st_id, int type)
 	int m = image.cols;
 
 	Mat newimage(n,m,CV_8UC1,Scalar(0));
-	switch(filterid)
+	switch(type)
 	{
 		case 0:
 			newimage = erosion(image,structures[st_id]);
@@ -171,15 +229,6 @@ void applyfilter(int fileid, int st_id, int type)
 
 	//cout<<max_val<<" "<<min_val<<"\n";
 
-	Mat res(n,m,CV_8UC1,Scalar(0));
-	for(int i=0;i<n;i++)
-	{
-		for(int j=0;j<m;j++)
-		{
-			res.at<uint8_t>(i,j) = 1;
-		}
-	}
-
 	Mat st_res(n,m,CV_8UC1,Scalar(0));
 	for(int i=0;i<structures[st_id].rows;i++)
 	{
@@ -193,7 +242,7 @@ void applyfilter(int fileid, int st_id, int type)
 	Mat mat_im = result(Rect(0,0,image.cols,image.rows));
 	image.copyTo(mat_im);
 	mat_im = result(Rect(image.cols,0,image.cols,image.rows));
-	res.copyTo(mat_im);
+	newimage.copyTo(mat_im);
 	mat_im = result(Rect(2*image.cols,0,image.cols,image.rows));
 	st_res.copyTo(mat_im);
 
@@ -214,14 +263,6 @@ void myFunc(int value, void *ud)
 
 int main()
 {
-	// string file;
-	// cout << "Enter File Name" << endl;
-	// cin >> file; 
-	// string filename = file+".bmp";
-	// int ind;
-	// cout << "Enter the structuring element number : "<<endl;
-	// cin >> ind;
-	// Mat image = imread(filename, IMREAD_GRAYSCALE);
 
 	int fname = 0;
 	int st_id = 0;
@@ -239,8 +280,8 @@ int main()
 	vector<string> types = {"Erosion","Dilation","Opening","Closing"};
 
 	createTrackbar("File-ID", "Tracker", u.file_id, imgs.size() - 1, myFunc, &u);
-	createTrackbar("Filter-ID", "Tracker", u.st_id, structures.size() - 1, myFunc, &u);
-	createTrackbar("Type", "Tracker", u.type, types.size(), myFunc, &u);
+	createTrackbar("Structure-ID", "Tracker", u.st_id, structures.size() - 1, myFunc, &u);
+	createTrackbar("Filter-Type", "Tracker", u.type, types.size() - 1, myFunc, &u);
 
 	Mat image = imread(imgs[0], IMREAD_GRAYSCALE);
 	Mat res_im( image.cols,image.rows, CV_8UC1, Scalar(255));
