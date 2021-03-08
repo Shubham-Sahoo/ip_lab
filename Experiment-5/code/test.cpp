@@ -87,11 +87,11 @@ Mat erosion(Mat image, Mat st)
 						flag = 1;
 						break;
 					}
-					if(image.at<uint8_t>(ref_i,ref_j) == 255 && st.at<uint8_t>(k,l)==0)
-					{
-						flag = 1;
-						break;
-					}
+					// if(image.at<uint8_t>(ref_i,ref_j) == 255 && st.at<uint8_t>(k,l)==0)
+					// {
+					// 	flag = 1;
+					// 	break;
+					// }
 				}
 				if(flag==1)
 				{
