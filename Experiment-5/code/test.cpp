@@ -69,8 +69,6 @@ Mat erosion(Mat image, Mat st)
 	{
 		st_r = 0;	
 	}
-	
-
 	for(int i=st_r;i<n-en_r;i++)
 	{
 		for(int j=st_c;j<m-en_c;j++)
@@ -87,11 +85,6 @@ Mat erosion(Mat image, Mat st)
 						flag = 1;
 						break;
 					}
-					// if(image.at<uint8_t>(ref_i,ref_j) == 255 && st.at<uint8_t>(k,l)==0)
-					// {
-					// 	flag = 1;
-					// 	break;
-					// }
 				}
 				if(flag==1)
 				{
