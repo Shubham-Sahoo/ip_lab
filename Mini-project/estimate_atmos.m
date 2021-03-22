@@ -7,7 +7,7 @@ function y = estimate_atmos(image, dark)
 
 n = size(dark, 1);
 m = size(dark, 2);
-numel = 0.1 * 0.01 * n * m;
+numel = floor(0.1 * 0.01 * n * m);
 
 dark1 = reshape(dark, [n*m, 1]);
 image1 = reshape(image, [n*m, 3]);
@@ -17,8 +17,13 @@ y = zeros(1,3);
 s = size(k,1);
 count = 0;
 for i = 1:s
-    y = y + image1(k(i));
+%     fprintf("%d %d %d \n", image1(k(i, 1), 1), image1(k(i, 1), 2), image1(k(i, 1), 3));
+    y(1, 1) = y(1, 1) + int32(image1(k(i,1), 1));
+    y(1, 2) = y(1, 2) + int32(image1(k(i,1), 2));
+    y(1, 3) = y(1, 3) + int32(image1(k(i,1), 3));
     count = count + 1;
 end
-y = y / count;
+y (1, 1) = uint8(floor(y(1,1)/count));
+y (1, 2) = uint8(floor(y(1,2)/count));
+y (1, 3) = uint8(floor(y(1,3)/count));
 end
