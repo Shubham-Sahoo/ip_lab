@@ -2,7 +2,7 @@
 clear;
 close all;
 
-image = imread('sample2.jpeg');
+image = imread('./images/sample3.jpeg');
 
 rows = size(image, 1);
 cols = size(image, 2);
@@ -27,5 +27,7 @@ for i = 1 : rows
         fprintf("%d %d %d \n", int32(haze_free(i,j,1)), int32(haze_free(i,j,2)), int32(haze_free(i,j,3)));
     end
 end
+
+
 figure, imshow(image);
 figure, imshow(haze_free);
