@@ -6,7 +6,12 @@ numWindowPixels = windowSize(1) * windowSize(2);
 imageSize          = size(imageRGB);
 numImagePixels     = imageSize(1) * imageSize(2);
 numImageDimensions = imageSize(3);
-mattingLaplacian = sparse(numImagePixels, numImagePixels);
+% mattingLaplacian = spalloc(numImagePixels, numImagePixels, 0);
+% temp = zeros(numImagePixels,numImagePixels);
+sparse_rows = [];
+sparse_cols = [];
+sparse_vals = [];
+
 for imageRow = 2:imageSize(1)-1
     for imageCol = 2:imageSize(2)-1
         windowIndices = [imageRow-1 imageCol-1 imageRow+1 imageCol+1];
@@ -43,8 +48,12 @@ for imageRow = 2:imageSize(1)-1
                         
                         rowPixelVariance = reshape(imageRGB(firstRow,  firstCol,  :), numImageDimensions, 1) - windowMean;
                         colPixelVariance = reshape(imageRGB(secondRow, secondCol, :), numImageDimensions, 1) - windowMean;
-                        
-                        mattingLaplacian(mattingLaplacianRow, mattingLaplacianCol) = mattingLaplacian(mattingLaplacianRow, mattingLaplacianCol) + (kroneckerDelta - windowInvNumPixels * (1 + transpose(rowPixelVariance) / windowInvCovarianceIdentity * colPixelVariance));
+%                         fprintf("%d %d \n", mattingLaplacianRow,mattingLaplacianCol); 
+                        sparse_rows = [sparse_rows, mattingLaplacianRow];
+                        sparse_cols = [sparse_cols, mattingLaplacianCol];
+                        sparse_vals = [sparse_vals, (kroneckerDelta - windowInvNumPixels * (1 + transpose(rowPixelVariance) / windowInvCovarianceIdentity * colPixelVariance))];
+%                         mattingLaplacian(mattingLaplacianRow, mattingLaplacianCol) = mattingLaplacian(mattingLaplacianRow, mattingLaplacianCol) + (kroneckerDelta - windowInvNumPixels * (1 + transpose(rowPixelVariance) / windowInvCovarianceIdentity * colPixelVariance));
+%                         temp(mattingLaplacianRow, mattingLaplacianCol) = temp(mattingLaplacianRow, mattingLaplacianCol) + (kroneckerDelta - windowInvNumPixels * (1 + transpose(rowPixelVariance) / windowInvCovarianceIdentity * colPixelVariance));
                         %if kroneckerDelta == 0
                         %    mattingLaplacian(mattingLaplacianCol, mattingLaplacianRow) = mattingLaplacian(mattingLaplacianCol, mattingLaplacianRow) + (kroneckerDelta - windowInvNumPixels * (1 + transpose(colPixelVariance) / windowInvCovarianceIdentity * rowPixelVariance));
                         %end
@@ -54,6 +63,7 @@ for imageRow = 2:imageSize(1)-1
         end
     end
 end
+mattingLaplacian = sparse(sparse_rows,sparse_cols,sparse_vals,numImagePixels,numImagePixels);
 transmissionFlat = reshape(transpose(transmission), numImagePixels, 1);
 refinedTransmissionFlat = (mattingLaplacian + (lambda * speye(numImagePixels))) \ (lambda * transmissionFlat);
 refinedTransmission = transpose(reshape(refinedTransmissionFlat, imageSize(2), imageSize(1)));
