@@ -1,5 +1,5 @@
 function [ refinedTransmission ] = soft_matting(transmission, imageRGB)
-epsilon = 10^-8;
+epsilon = 10^-1;
 lambda  = 10^-4;
 windowSize      = [3 3];
 numWindowPixels = windowSize(1) * windowSize(2);
@@ -51,7 +51,7 @@ for imageRow = 2:imageSize(1)-1
 %                         fprintf("%d %d \n", mattingLaplacianRow,mattingLaplacianCol); 
                         sparse_rows = [sparse_rows, mattingLaplacianRow];
                         sparse_cols = [sparse_cols, mattingLaplacianCol];
-                        sparse_vals = [sparse_vals, (kroneckerDelta - windowInvNumPixels * (1 + transpose(rowPixelVariance) / windowInvCovarianceIdentity * colPixelVariance))];
+                        sparse_vals = [sparse_vals, (kroneckerDelta - windowInvNumPixels * (1 + (transpose(rowPixelVariance) / windowInvCovarianceIdentity) * colPixelVariance))];
 %                         mattingLaplacian(mattingLaplacianRow, mattingLaplacianCol) = mattingLaplacian(mattingLaplacianRow, mattingLaplacianCol) + (kroneckerDelta - windowInvNumPixels * (1 + transpose(rowPixelVariance) / windowInvCovarianceIdentity * colPixelVariance));
 %                         temp(mattingLaplacianRow, mattingLaplacianCol) = temp(mattingLaplacianRow, mattingLaplacianCol) + (kroneckerDelta - windowInvNumPixels * (1 + transpose(rowPixelVariance) / windowInvCovarianceIdentity * colPixelVariance));
                         %if kroneckerDelta == 0

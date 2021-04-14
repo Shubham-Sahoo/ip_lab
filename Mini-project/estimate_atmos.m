@@ -7,8 +7,8 @@ function y = estimate_atmos(image, dark)
 
 n = size(dark, 1);
 m = size(dark, 2);
-numel = floor(0.1 * 0.01 * n * m);
-
+numel = floor(0.1 * 0.1 * n * m);
+%disp(numel);
 dark1 = reshape(dark, [n*m, 1]);
 image1 = reshape(image, [n*m, 3]);
 [~, k] = maxk(dark1, numel);
